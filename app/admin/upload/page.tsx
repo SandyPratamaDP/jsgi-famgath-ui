@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
-import { uploadExcel, downloadBulkPdf } from '../../../lib/api';
+import { uploadExcel } from '../../../lib/api';
 
 type StatusKind = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -71,27 +71,6 @@ export default function UploadPage() {
     } catch {
       setKind('error');
       setMessage('Upload gagal. Periksa format file dan coba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── bulk PDF ─────────────────────────────────────────────────────────────
-  const handleDownload = async () => {
-    setLoading(true);
-    setKind('idle');
-    setMessage('');
-    try {
-      const blob = await downloadBulkPdf();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = 'family-gathering-tickets.zip';
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      setKind('error');
-      setMessage('Gagal generate PDF. Pastikan data sudah diimport terlebih dahulu.');
     } finally {
       setLoading(false);
     }
@@ -190,16 +169,6 @@ export default function UploadPage() {
                 {loading && statusKind === 'uploading'
                   ? <><span className="loading loading-spinner loading-sm" /> Mengupload...</>
                   : 'Upload & Import'}
-              </button>
-
-              <button
-                className="btn btn-secondary"
-                onClick={handleDownload}
-                disabled={loading}
-              >
-                {loading && statusKind !== 'uploading'
-                  ? <><span className="loading loading-spinner loading-sm" /> Generating PDF...</>
-                  : 'Generate & Download All PDFs'}
               </button>
             </div>
 

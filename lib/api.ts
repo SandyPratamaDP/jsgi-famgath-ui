@@ -52,8 +52,14 @@ export async function updateEmployee(id: number, payload: Record<string, unknown
   });
 }
 
-export async function downloadBulkPdf() {
-  const response = await fetch(`${API_BASE}/employees/bulk-pdf`, {
+export async function downloadEmployeePdf(id: number) {
+  const response = await fetch(`${API_BASE}/employees/${id}/pdf`);
+  if (!response.ok) throw new Error('Failed to download PDF');
+  return response.blob();
+}
+
+export async function generateAndDownloadPdfs() {
+  const response = await fetch(`${API_BASE}/employees/generate-pdfs`, {
     method: 'POST',
   });
 
@@ -61,6 +67,5 @@ export async function downloadBulkPdf() {
     throw new Error('Failed to generate PDF bundle');
   }
 
-  const blob = await response.blob();
-  return blob;
+  return response.blob();
 }

@@ -4,17 +4,37 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import useSWR from 'swr';
-import { fetchEmployees } from '../../../lib/api';
+import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf } from '../../../lib/api';
 
 type Tab = 'bus' | 'private_car';
 
 export default function EmployeesPage() {
-  const [tab, setTab]       = useState<Tab>('bus');
-  const [search, setSearch] = useState('');
+  const [tab, setTab]           = useState<Tab>('bus');
+  const [search, setSearch]     = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
 
   const { data, error, isLoading } = useSWR('employees', fetchEmployees, {
     refreshInterval: 10000,
   });
+
+  const handleGeneratePdfs = async () => {
+    setPdfLoading(true);
+    setPdfError('');
+    try {
+      const blob = await generateAndDownloadPdfs();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'family-gathering-tickets.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setPdfError('Gagal generate PDF. Pastikan data sudah diimport terlebih dahulu.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const all  = data?.data ?? [];
   const buses = all.filter((e: any) => e.transport_type === 'bus');
@@ -47,14 +67,44 @@ export default function EmployeesPage() {
               <p className="text-sm text-base-content/60 mt-0.5">Data karyawan, tipe transport, PIC bus, dan kehadiran.</p>
             </div>
           </div>
-          <Link href="/admin/upload" className="btn btn-primary btn-sm gap-2 shrink-0">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            Upload Excel
-          </Link>
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <button
+              className="btn btn-secondary btn-sm gap-2"
+              onClick={handleGeneratePdfs}
+              disabled={pdfLoading}
+            >
+              {pdfLoading ? (
+                <><span className="loading loading-spinner loading-xs" /> Generating...</>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Generate All PDFs
+                </>
+              )}
+            </button>
+            <Link href="/admin/upload" className="btn btn-primary btn-sm gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Upload Excel
+            </Link>
+          </div>
         </div>
+
+        {/* PDF error */}
+        {pdfError && (
+          <div className="alert alert-error text-sm py-2">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <span>{pdfError}</span>
+            <button onClick={() => setPdfError('')} className="ml-auto text-base-content/50 hover:text-base-content">✕</button>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 bg-base-100 border border-base-300 rounded-xl p-1 w-fit">
@@ -163,6 +213,44 @@ function TransportBadge({ type }: { type: string }) {
   );
 }
 
+function PdfDownloadButton({ employee }: { employee: any }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleDownload = async () => {
+    setLoading(true);
+    try {
+      const blob = await downloadEmployeePdf(employee.id);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `${employee.name.replace(/\s+/g, '_').toLowerCase()}_ticket.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={loading}
+      title="Download PDF"
+      className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-primary hover:bg-primary/10"
+    >
+      {loading
+        ? <span className="loading loading-spinner loading-xs" />
+        : (
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+          </svg>
+        )}
+      PDF
+    </button>
+  );
+}
+
 function BusTable({ employees }: { employees: any[] }) {
   return (
     <table className="table table-zebra w-full text-sm">
@@ -174,6 +262,7 @@ function BusTable({ employees }: { employees: any[] }) {
           <th>No. Bus</th>
           <th>PIC Bus</th>
           <th>Titik Jemputan</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -193,6 +282,11 @@ function BusTable({ employees }: { employees: any[] }) {
                 : <span className="text-base-content/30 text-xs">—</span>}
             </td>
             <td className="text-base-content/70">{e.pickup_point ?? '—'}</td>
+            <td>
+              {e.is_pic_bus
+                ? <PdfDownloadButton employee={e} />
+                : <span className="text-base-content/20 text-xs px-2">—</span>}
+            </td>
           </tr>
         ))}
       </tbody>
@@ -209,6 +303,7 @@ function CarTable({ employees }: { employees: any[] }) {
           <th className="text-center">Jml. Keluarga</th>
           <th>Jenis Kendaraan</th>
           <th className="text-center">Jml. Kendaraan</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -218,6 +313,7 @@ function CarTable({ employees }: { employees: any[] }) {
             <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
             <td><TransportBadge type={e.transport_type} /></td>
             <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
+            <td><PdfDownloadButton employee={e} /></td>
           </tr>
         ))}
       </tbody>
