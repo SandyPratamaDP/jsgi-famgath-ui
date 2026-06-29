@@ -25,7 +25,7 @@ export default function LoginPage() {
       if (data.role === 'eo') {
         router.replace('/gate-scanner');
       } else {
-        router.replace('/admin/employees');
+        router.replace('/');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login gagal.');

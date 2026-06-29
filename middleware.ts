@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
   // Already logged in → redirect away from login page
   if (pathname === '/login' && token) {
     const dest = request.nextUrl.clone();
-    dest.pathname = role === 'eo' ? '/gate-scanner' : '/admin/employees';
+    dest.pathname = role === 'eo' ? '/gate-scanner' : '/';
     return NextResponse.redirect(dest);
   }
 
