@@ -13,9 +13,9 @@ module.exports = {
       {
         'jfe-dark': {
           // Base surfaces — dark navy blue
-          'base-100': '#0E1C2E',   // card / popover background
-          'base-200': '#081525',   // page background
-          'base-300': '#1E3450',   // dividers / subtle borders
+          'base-100': '#162840',   // card / popover background
+          'base-200': '#0E1F35',   // page background
+          'base-300': '#1E3A54',   // dividers / subtle borders
           'base-content': '#EDF5FF',
 
           // Primary — JFE signature blue

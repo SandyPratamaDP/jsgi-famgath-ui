@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 import { uploadExcel, downloadBulkPdf } from '../../../lib/api';
 
@@ -112,11 +114,22 @@ export default function UploadPage() {
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body gap-4">
 
-            <div>
-              <h1 className="card-title text-xl">Excel Upload Dashboard</h1>
-              <p className="text-sm text-base-content/60 mt-1">
-                Upload satu file Excel dengan sheet: Pribadi Local, Pribadi Expat, Bus, dan Data Terakhir Kary.
-              </p>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Image src="/images/logo.webp" alt="Logo" width={48} height={48} className="shrink-0" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.4)) drop-shadow(0 0 18px rgba(255,255,255,0.15))' }} />
+                <div>
+                  <h1 className="card-title text-xl">Excel Upload Dashboard</h1>
+                  <p className="text-sm text-base-content/60 mt-1">
+                    Upload satu file Excel dengan sheet: Pribadi Local, Pribadi Expat, Bus, dan Data Terakhir Kary.
+                  </p>
+                </div>
+              </div>
+              <Link href="/admin/employees" className="btn btn-ghost btn-sm gap-1.5 shrink-0">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Employee List
+              </Link>
             </div>
 
             {/* Hidden file input — triggered via ref */}

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import useSWR from 'swr';
 import { searchEmployees, updateEmployee } from '../../lib/api';
@@ -56,12 +57,20 @@ export default function GateScannerPage() {
       <div className="max-w-sm mx-auto space-y-4 relative">
 
         {/* Header */}
-        <div className="pt-8 pb-2 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/20 border border-primary/30 mb-3 shadow-lg">
-            <span className="text-3xl">🎟</span>
+        <div className="pt-6 pb-2 flex items-center gap-3">
+          <Image
+            src="/images/logo.webp"
+            alt="JSGI Family Gathering 2026"
+            width={64}
+            height={64}
+            priority
+            className="shrink-0"
+            style={{ filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.45)) drop-shadow(0 0 24px rgba(255,255,255,0.18))' }}
+          />
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Gate Scanner</h1>
+            <p className="text-xs text-base-content/55 mt-0.5">Family Gathering 2026 · JSGI</p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Gate Scanner</h1>
-          <p className="text-xs text-base-content/60 mt-1">Family Gathering 2026</p>
         </div>
 
         {/* Unified search pill */}
@@ -198,7 +207,6 @@ function PrivateCarCard({ employee, switched }: { employee: any; switched?: bool
 
         <div>
           <p className="text-xl font-bold leading-tight">{employee.name}</p>
-          <p className="text-sm text-base-content/60 mt-0.5">{employee.nik}</p>
         </div>
 
         <div className="space-y-1 pt-2 border-t border-base-300">
@@ -221,7 +229,6 @@ function BusCard({ employee }: { employee: any }) {
 
         <div>
           <p className="text-xl font-bold leading-tight">{employee.name}</p>
-          <p className="text-sm text-base-content/60 mt-0.5">{employee.nik}</p>
         </div>
 
         <div className="space-y-1 pt-2 border-t border-base-300">
