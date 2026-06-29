@@ -2,18 +2,30 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
-import { uploadExcel } from '../../../lib/api';
+import { useCallback, useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { uploadExcel, logoutApi } from '../../../lib/api';
+import { clearAuth, getDisplayName } from '../../../lib/auth';
 
 type StatusKind = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function UploadPage() {
+  const router = useRouter();
   const [file, setFile]           = useState<File | null>(null);
   const [statusKind, setKind]     = useState<StatusKind>('idle');
   const [message, setMessage]     = useState('');
   const [loading, setLoading]     = useState(false);
   const [isDragging, setDragging] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const inputRef                  = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDisplayName(getDisplayName() ?? ''); }, []);
+
+  const handleLogout = async () => {
+    await logoutApi();
+    clearAuth();
+    router.replace('/login');
+  };
 
   // ── file validation & state setter ──────────────────────────────────────
   const applyFile = (selected: File | null) => {
@@ -103,12 +115,24 @@ export default function UploadPage() {
                   </p>
                 </div>
               </div>
-              <Link href="/admin/employees" className="btn btn-ghost btn-sm gap-1.5 shrink-0">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Employee List
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                {displayName && (
+                  <span className="text-xs text-base-content/50 hidden sm:inline">{displayName}</span>
+                )}
+                <button onClick={handleLogout} className="btn btn-ghost btn-sm gap-1 text-base-content/60">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Keluar
+                </button>
+                <Link href="/admin/employees" className="btn btn-ghost btn-sm gap-1.5">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Employee List
+                </Link>
+              </div>
             </div>
 
             {/* Hidden file input — triggered via ref */}

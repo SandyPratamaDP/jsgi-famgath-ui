@@ -2,15 +2,24 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { searchEmployees, updateEmployee } from '../../lib/api';
+import { searchEmployees, updateEmployee, logoutApi } from '../../lib/api';
+import { clearAuth } from '../../lib/auth';
 
 export default function GateScannerPage() {
+  const router = useRouter();
   const [query, setQuery]                       = useState('');
   const [searchTerm, setSearchTerm]             = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
   const [statusMsg, setStatusMsg]               = useState('');
   const [switchedFromBus, setSwitchedFromBus]   = useState(false);
+
+  const handleLogout = async () => {
+    await logoutApi();
+    clearAuth();
+    router.replace('/login');
+  };
 
   const { data, error, isLoading } = useSWR(
     searchTerm ? ['search', searchTerm] : null,
@@ -67,10 +76,20 @@ export default function GateScannerPage() {
             className="shrink-0"
             style={{ filter: 'brightness(1.15) drop-shadow(0 0 4px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35)) drop-shadow(0 0 50px rgba(200,220,255,0.2))' }}
           />
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold tracking-tight">Gate Scanner</h1>
             <p className="text-xs text-base-content/55 mt-0.5">Family Gathering 2026 · JSGI</p>
           </div>
+          <button
+            onClick={handleLogout}
+            title="Keluar"
+            className="btn btn-ghost btn-sm text-base-content/50 hover:text-base-content"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
 
         {/* Unified search pill */}

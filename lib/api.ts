@@ -1,10 +1,21 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+import { getToken } from './auth';
+
+const API_BASE     = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+const AUTH_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
+  ? process.env.NEXT_PUBLIC_API_BASE_URL.replace('/v1', '')
+  : 'http://127.0.0.1:8000/api';
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export async function fetcher(url: string, options: RequestInit = {}) {
   const response = await fetch(`${API_BASE}${url}`, {
     ...options,
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
+      ...authHeaders(),
       ...options.headers,
     },
   });
@@ -17,12 +28,40 @@ export async function fetcher(url: string, options: RequestInit = {}) {
   return response.json();
 }
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export async function loginApi(username: string, password: string) {
+  const response = await fetch(`${AUTH_API_BASE}/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Login gagal.');
+  }
+
+  return data as { token: string; role: string; display_name: string };
+}
+
+export async function logoutApi() {
+  await fetch(`${AUTH_API_BASE}/v1/auth/logout`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', ...authHeaders() },
+  }).catch(() => {});
+}
+
+// ── Employees ────────────────────────────────────────────────────────────────
+
 export async function uploadExcel(file: File) {
   const form = new FormData();
   form.append('file', file);
 
   const response = await fetch(`${API_BASE}/import-employees`, {
     method: 'POST',
+    headers: authHeaders(),
     body: form,
   });
 
@@ -46,14 +85,14 @@ export async function updateEmployee(id: number, payload: Record<string, unknown
   return fetcher(`/employees/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
 export async function downloadEmployeePdf(id: number) {
-  const response = await fetch(`${API_BASE}/employees/${id}/pdf`);
+  const response = await fetch(`${API_BASE}/employees/${id}/pdf`, {
+    headers: authHeaders(),
+  });
   if (!response.ok) throw new Error('Failed to download PDF');
   return response.blob();
 }
@@ -61,6 +100,7 @@ export async function downloadEmployeePdf(id: number) {
 export async function generateAndDownloadPdfs() {
   const response = await fetch(`${API_BASE}/employees/generate-pdfs`, {
     method: 'POST',
+    headers: authHeaders(),
   });
 
   if (!response.ok) {

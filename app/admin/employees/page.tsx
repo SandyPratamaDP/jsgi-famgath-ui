@@ -2,21 +2,33 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf } from '../../../lib/api';
+import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, logoutApi } from '../../../lib/api';
+import { clearAuth, getDisplayName } from '../../../lib/auth';
 
 type Tab = 'bus' | 'private_car';
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const [tab, setTab]           = useState<Tab>('bus');
   const [search, setSearch]     = useState('');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
+  const [displayName, setDisplayName] = useState('');
+
+  useEffect(() => { setDisplayName(getDisplayName() ?? ''); }, []);
 
   const { data, error, isLoading } = useSWR('employees', fetchEmployees, {
     refreshInterval: 10000,
   });
+
+  const handleLogout = async () => {
+    await logoutApi();
+    clearAuth();
+    router.replace('/login');
+  };
 
   const handleGeneratePdfs = async () => {
     setPdfLoading(true);
@@ -68,6 +80,16 @@ export default function EmployeesPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            {displayName && (
+              <span className="text-xs text-base-content/50 hidden sm:inline">{displayName}</span>
+            )}
+            <button onClick={handleLogout} className="btn btn-ghost btn-sm gap-1 text-base-content/60">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Keluar
+            </button>
             <button
               className="btn btn-secondary btn-sm gap-2"
               onClick={handleGeneratePdfs}
