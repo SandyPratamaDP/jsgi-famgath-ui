@@ -97,6 +97,14 @@ export async function downloadEmployeePdf(id: number) {
   return response.blob();
 }
 
+export async function downloadEmployeeImage(id: number) {
+  const response = await fetch(`${API_BASE}/employees/${id}/image`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to download image');
+  return response.blob();
+}
+
 export async function generateAndDownloadPdfs() {
   const response = await fetch(`${API_BASE}/employees/generate-pdfs`, {
     method: 'POST',

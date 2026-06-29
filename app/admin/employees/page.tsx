@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, logoutApi } from '../../../lib/api';
+import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, downloadEmployeeImage, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
 
 type Tab = 'bus' | 'private_car';
@@ -273,6 +273,44 @@ function PdfDownloadButton({ employee }: { employee: any }) {
   );
 }
 
+function ImageDownloadButton({ employee }: { employee: any }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleDownload = async () => {
+    setLoading(true);
+    try {
+      const blob = await downloadEmployeeImage(employee.id);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `${employee.name.replace(/\s+/g, '_').toLowerCase()}_ticket.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={loading}
+      title="Download Image"
+      className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-secondary hover:bg-secondary/10"
+    >
+      {loading
+        ? <span className="loading loading-spinner loading-xs" />
+        : (
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        )}
+      IMG
+    </button>
+  );
+}
+
 function BusTable({ employees }: { employees: any[] }) {
   return (
     <table className="table table-zebra w-full text-sm">
@@ -306,7 +344,10 @@ function BusTable({ employees }: { employees: any[] }) {
             <td className="text-base-content/70">{e.pickup_point ?? '—'}</td>
             <td>
               {e.is_pic_bus
-                ? <PdfDownloadButton employee={e} />
+                ? <div className="flex items-center gap-1">
+                    <PdfDownloadButton employee={e} />
+                    <ImageDownloadButton employee={e} />
+                  </div>
                 : <span className="text-base-content/20 text-xs px-2">—</span>}
             </td>
           </tr>
@@ -353,7 +394,12 @@ function CarTable({ employees }: { employees: any[] }) {
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
               <td><TransportBadge type={e.transport_type} /></td>
               <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
-              <td><PdfDownloadButton employee={e} /></td>
+              <td>
+                <div className="flex items-center gap-1">
+                  <PdfDownloadButton employee={e} />
+                  <ImageDownloadButton employee={e} />
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
