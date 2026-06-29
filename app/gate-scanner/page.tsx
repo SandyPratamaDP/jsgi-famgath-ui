@@ -65,7 +65,7 @@ export default function GateScannerPage() {
             height={64}
             priority
             className="shrink-0"
-            style={{ filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.45)) drop-shadow(0 0 24px rgba(255,255,255,0.18))' }}
+            style={{ filter: 'brightness(1.15) drop-shadow(0 0 4px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35)) drop-shadow(0 0 50px rgba(200,220,255,0.2))' }}
           />
           <div>
             <h1 className="text-xl font-bold tracking-tight">Gate Scanner</h1>
