@@ -13,7 +13,6 @@ export default function GateScannerPage() {
   const [searchTerm, setSearchTerm]             = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
   const [statusMsg, setStatusMsg]               = useState('');
-  const [switchedFromBus, setSwitchedFromBus]   = useState(false);
 
   const handleLogout = async () => {
     await logoutApi();
@@ -37,7 +36,6 @@ export default function GateScannerPage() {
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSelectedEmployee(null);
-    setSwitchedFromBus(false);
     setStatusMsg('');
     setSearchTerm(query.trim());
   };
@@ -51,7 +49,6 @@ export default function GateScannerPage() {
         transport_type: 'private_car',
       });
       setSelectedEmployee(res.data);
-      setSwitchedFromBus(true);
       setStatusMsg('');
     } catch {
       setStatusMsg('Gagal menyimpan. Coba lagi.');
@@ -158,7 +155,7 @@ export default function GateScannerPage() {
         {employee && (
           <>
             {employee.transport_type === 'private_car'
-              ? <PrivateCarCard employee={employee} switched={switchedFromBus} />
+              ? <PrivateCarCard employee={employee} switched={employee.switched_from_bus} />
               : <BusCard employee={employee} />}
 
             {/* Emergency switch */}

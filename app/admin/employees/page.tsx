@@ -317,28 +317,47 @@ function BusTable({ employees }: { employees: any[] }) {
 }
 
 function CarTable({ employees }: { employees: any[] }) {
+  const switchedCount = employees.filter((e: any) => e.switched_from_bus).length;
+
   return (
-    <table className="table table-zebra w-full text-sm">
-      <thead>
-        <tr className="text-xs text-base-content/55 uppercase tracking-wide">
-          <th>Nama</th>
-          <th className="text-center">Jml. Keluarga</th>
-          <th>Jenis Kendaraan</th>
-          <th className="text-center">Jml. Kendaraan</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {employees.map((e: any) => (
-          <tr key={e.id}>
-            <td className="font-medium">{e.name}</td>
-            <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
-            <td><TransportBadge type={e.transport_type} /></td>
-            <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
-            <td><PdfDownloadButton employee={e} /></td>
+    <>
+      {switchedCount > 0 && (
+        <div className="px-4 py-2.5 border-b border-base-300 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-warning/15 text-warning border border-warning/30">
+            ⚠️ Pindahan Bus
+          </span>
+          <span className="text-xs text-base-content/55">{switchedCount} karyawan dialihkan dari bus pada hari-H</span>
+        </div>
+      )}
+      <table className="table table-zebra w-full text-sm">
+        <thead>
+          <tr className="text-xs text-base-content/55 uppercase tracking-wide">
+            <th>Nama</th>
+            <th className="text-center">Jml. Keluarga</th>
+            <th>Jenis Kendaraan</th>
+            <th className="text-center">Jml. Kendaraan</th>
+            <th></th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {employees.map((e: any) => (
+            <tr key={e.id} className={e.switched_from_bus ? 'bg-warning/5' : ''}>
+              <td>
+                <p className="font-medium">{e.name}</p>
+                {e.switched_from_bus && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25 mt-0.5">
+                    ⚠️ Pindahan Bus
+                  </span>
+                )}
+              </td>
+              <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
+              <td><TransportBadge type={e.transport_type} /></td>
+              <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
+              <td><PdfDownloadButton employee={e} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
