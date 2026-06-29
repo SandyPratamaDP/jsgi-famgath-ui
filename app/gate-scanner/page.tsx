@@ -155,6 +155,11 @@ export default function GateScannerPage() {
                   Gunakan jika penumpang bus tiba dengan kendaraan sendiri di hari-H.
                   Headcount akan mengikuti data karyawan.
                 </p>
+                <div className="rounded-xl bg-warning/15 border border-warning/25 px-3 py-2.5 text-xs text-base-content/80 leading-relaxed">
+                  <span className="font-semibold">Perhatian:</span> Tiket masuk kawasan Ancol untuk seluruh penumpang
+                  ditanggung oleh perusahaan. Namun <span className="font-semibold">biaya parkir kendaraan pribadi
+                  tidak termasuk</span> dan menjadi tanggung jawab karyawan yang bersangkutan.
+                </div>
                 <button className="btn btn-warning btn-sm w-full rounded-xl" onClick={handleSwitchToCar}>
                   Konfirmasi Pindah ke Mobil Pribadi
                 </button>
