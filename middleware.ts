@@ -4,13 +4,20 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const token = request.cookies.get('auth_token')?.value;
+  const role  = request.cookies.get('user_role')?.value;
+
+  // Already logged in → redirect away from login page
+  if (pathname === '/login' && token) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = role === 'eo' ? '/gate-scanner' : '/admin/employees';
+    return NextResponse.redirect(dest);
+  }
+
   // Public paths that don't need auth
   if (pathname === '/login' || pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
     return NextResponse.next();
   }
-
-  const token = request.cookies.get('auth_token')?.value;
-  const role  = request.cookies.get('user_role')?.value;
 
   // Not authenticated → login
   if (!token) {
