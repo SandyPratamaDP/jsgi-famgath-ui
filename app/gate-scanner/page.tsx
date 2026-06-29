@@ -221,7 +221,7 @@ function PrivateCarCard({ employee, switched }: { employee: any; switched?: bool
 
         {switched && (
           <div className="rounded-xl bg-warning/10 border border-warning/25 px-3 py-2 text-xs text-base-content/80 leading-relaxed">
-            Karyawan ini dialihkan dari bus ke kendaraan pribadi pada hari-H.
+            Karyawan ini beralih ke kendaraan pribadi pada hari-H.
           </div>
         )}
 
