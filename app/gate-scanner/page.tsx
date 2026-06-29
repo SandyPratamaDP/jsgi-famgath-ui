@@ -7,6 +7,59 @@ import useSWR from 'swr';
 import { searchEmployees, updateEmployee, logoutApi } from '../../lib/api';
 import { clearAuth } from '../../lib/auth';
 
+function QrSection() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg p-5 flex flex-col items-center gap-4">
+        <p className="text-[10px] font-bold text-base-content/55 uppercase tracking-widest">
+          QR Masuk Ancol
+        </p>
+        <button
+          onClick={() => setOpen(true)}
+          className="p-3 bg-white rounded-2xl shadow-md cursor-zoom-in active:scale-95 transition-transform"
+          title="Ketuk untuk memperbesar"
+        >
+          <img
+            src="/images/ancol-qr.png"
+            alt="Ancol QR Code"
+            className="w-44 h-44 object-contain"
+          />
+        </button>
+        <p className="text-xs text-base-content/60 text-center">
+          Ketuk QR untuk memperbesar · Tunjukkan saat verifikasi pintu masuk
+        </p>
+      </div>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-xs flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src="/images/ancol-qr.png"
+              alt="Ancol QR Code"
+              className="w-full aspect-square object-contain"
+            />
+            <p className="text-sm text-gray-500 text-center">Tunjukkan kepada petugas pintu masuk</p>
+            <button
+              onClick={() => setOpen(false)}
+              className="btn btn-ghost btn-sm w-full text-gray-400"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function GateScannerPage() {
   const router = useRouter();
   const [query, setQuery]                       = useState('');
@@ -182,23 +235,7 @@ export default function GateScannerPage() {
             )}
 
             {/* QR Code */}
-            {showQr && (
-              <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg p-5 flex flex-col items-center gap-4">
-                <p className="text-[10px] font-bold text-base-content/55 uppercase tracking-widest">
-                  QR Masuk Ancol
-                </p>
-                <div className="p-3 bg-white rounded-2xl shadow-md">
-                  <img
-                    src="/images/ancol-qr.png"
-                    alt="Ancol QR Code"
-                    className="w-44 h-44 object-contain"
-                  />
-                </div>
-                <p className="text-xs text-base-content/60 text-center">
-                  Tunjukkan QR ini saat verifikasi pintu masuk
-                </p>
-              </div>
-            )}
+            {showQr && <QrSection />}
           </>
         )}
 
