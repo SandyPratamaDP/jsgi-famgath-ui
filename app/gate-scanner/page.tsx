@@ -155,10 +155,19 @@ export default function GateScannerPage() {
                   Gunakan jika penumpang bus tiba dengan kendaraan sendiri di hari-H.
                   Headcount akan mengikuti data karyawan.
                 </p>
-                <div className="rounded-xl bg-warning/15 border border-warning/25 px-3 py-2.5 text-xs text-base-content/80 leading-relaxed">
-                  <span className="font-semibold">Perhatian:</span> Tiket masuk kawasan Ancol untuk seluruh penumpang
-                  ditanggung oleh perusahaan. Namun <span className="font-semibold">biaya parkir kendaraan pribadi
-                  tidak termasuk</span> dan menjadi tanggung jawab karyawan yang bersangkutan.
+                <div className="rounded-xl bg-warning/15 border border-warning/25 px-3 py-2.5 text-xs text-base-content/80 leading-relaxed space-y-1.5">
+                  <p>
+                    <span className="font-semibold">Perhatian:</span> Tiket masuk Ancol hanya ditanggung untuk
+                    <span className="font-semibold"> anggota keluarga yang telah terdaftar</span> sesuai jumlah
+                    pada kartu. Peserta yang dibawa melebihi jumlah terdaftar harus membeli tiket secara mandiri.
+                  </p>
+                  <p>
+                    <span className="font-semibold">Biaya parkir kendaraan pribadi tidak termasuk</span> dan
+                    menjadi tanggung jawab karyawan yang bersangkutan.
+                  </p>
+                  <p className="text-warning font-semibold">
+                    Petugas harap memverifikasi jumlah peserta yang masuk sesuai dengan jumlah yang tertera.
+                  </p>
                 </div>
                 <button className="btn btn-warning btn-sm w-full rounded-xl" onClick={handleSwitchToCar}>
                   Konfirmasi Pindah ke Mobil Pribadi
