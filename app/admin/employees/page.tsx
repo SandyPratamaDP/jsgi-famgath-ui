@@ -220,6 +220,24 @@ function CountBadge({ count, active }: { count: number; active: boolean }) {
   );
 }
 
+function AdditionalMembersBadge({ count }: { count: number }) {
+  if (!count) return <span className="text-base-content/30 text-xs">—</span>;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-info/10 text-info border border-info/20">
+      +{count}
+    </span>
+  );
+}
+
+function BelowTwoBadge({ has }: { has: boolean }) {
+  if (!has) return <span className="text-base-content/30 text-xs">—</span>;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/30">
+      👶 &lt;2 Thn
+    </span>
+  );
+}
+
 function TransportBadge({ type }: { type: string }) {
   if (type === 'private_car') {
     return (
@@ -318,6 +336,8 @@ function BusTable({ employees }: { employees: any[] }) {
         <tr className="text-xs text-base-content/55 uppercase tracking-wide">
           <th>Nama</th>
           <th className="text-center">Jml. Keluarga</th>
+          <th className="text-center">Tambahan Peserta</th>
+          <th className="text-center">Anak &lt;2 Thn</th>
           <th>Jenis Kendaraan</th>
           <th>No. Bus</th>
           <th>PIC Bus</th>
@@ -330,6 +350,8 @@ function BusTable({ employees }: { employees: any[] }) {
           <tr key={e.id}>
             <td className="font-medium">{e.name}</td>
             <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
+            <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
+            <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
             <td><TransportBadge type={e.transport_type} /></td>
             <td>
               {e.bus_number != null
@@ -375,6 +397,8 @@ function CarTable({ employees }: { employees: any[] }) {
           <tr className="text-xs text-base-content/55 uppercase tracking-wide">
             <th>Nama</th>
             <th className="text-center">Jml. Keluarga</th>
+            <th className="text-center">Tambahan Peserta</th>
+            <th className="text-center">Anak &lt;2 Thn</th>
             <th>Jenis Kendaraan</th>
             <th className="text-center">Jml. Kendaraan</th>
             <th></th>
@@ -392,6 +416,8 @@ function CarTable({ employees }: { employees: any[] }) {
                 )}
               </td>
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
+              <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
+              <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
               <td><TransportBadge type={e.transport_type} /></td>
               <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
               <td>
