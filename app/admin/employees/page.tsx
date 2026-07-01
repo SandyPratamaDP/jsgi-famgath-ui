@@ -61,7 +61,7 @@ export default function EmployeesPage() {
 
   return (
     <main className="min-h-screen p-6 bg-base-200">
-      <div className="max-w-7xl mx-auto space-y-4">
+      <div className="max-w-[1600px] mx-auto space-y-4">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -239,6 +239,19 @@ function BelowTwoBadge({ has }: { has: boolean }) {
   );
 }
 
+function maskEmail(email?: string | null): string | null {
+  if (!email) return null;
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  return `${local.slice(0, 2)}*****@${domain}`;
+}
+
+function MaskedEmail({ email }: { email?: string | null }) {
+  const masked = maskEmail(email);
+  if (!masked) return <span className="text-base-content/30 text-xs">—</span>;
+  return <span className="text-base-content/60 text-xs">{masked}</span>;
+}
+
 function TransportBadge({ type }: { type: string }) {
   if (type === 'private_car') {
     return (
@@ -343,6 +356,7 @@ function BusTable({ employees }: { employees: any[] }) {
             </div>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+              <CardField label="Email" value={<MaskedEmail email={e.email} />} />
               <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
               <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
               <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
@@ -376,6 +390,7 @@ function BusTable({ employees }: { employees: any[] }) {
         <thead>
           <tr className="text-xs text-base-content/55 uppercase tracking-wide">
             <th>Nama</th>
+            <th>Email</th>
             <th className="text-center">Jml. Keluarga</th>
             <th className="text-center">Tambahan Peserta</th>
             <th className="text-center">Anak &lt;2 Thn</th>
@@ -390,6 +405,7 @@ function BusTable({ employees }: { employees: any[] }) {
           {employees.map((e: any) => (
             <tr key={e.id}>
               <td className="font-medium">{e.name}</td>
+              <td><MaskedEmail email={e.email} /></td>
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
               <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
               <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
@@ -460,6 +476,7 @@ function CarTable({ employees }: { employees: any[] }) {
             </div>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+              <CardField label="Email" value={<MaskedEmail email={e.email} />} />
               <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
               <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
               <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
@@ -479,6 +496,7 @@ function CarTable({ employees }: { employees: any[] }) {
         <thead>
           <tr className="text-xs text-base-content/55 uppercase tracking-wide">
             <th>Nama</th>
+            <th>Email</th>
             <th className="text-center">Jml. Keluarga</th>
             <th className="text-center">Tambahan Peserta</th>
             <th className="text-center">Anak &lt;2 Thn</th>
@@ -498,6 +516,7 @@ function CarTable({ employees }: { employees: any[] }) {
                   </span>
                 )}
               </td>
+              <td><MaskedEmail email={e.email} /></td>
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
               <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
               <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
