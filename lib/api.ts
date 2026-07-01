@@ -1,9 +1,9 @@
 import { getToken } from './auth';
 
-const API_BASE     = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
-const AUTH_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
-  ? process.env.NEXT_PUBLIC_API_BASE_URL.replace('/v1', '')
-  : 'http://127.0.0.1:8000/api';
+// Path relatif: browser cuma manggil origin Next.js sendiri, yang lalu
+// di-proxy ke Laravel internal lewat rewrite di next.config.ts.
+const API_BASE      = '/api/v1';
+const AUTH_API_BASE = '/api';
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
