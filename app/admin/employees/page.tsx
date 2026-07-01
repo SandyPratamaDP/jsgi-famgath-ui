@@ -83,36 +83,37 @@ export default function EmployeesPage() {
             {displayName && (
               <span className="text-xs text-base-content/50 hidden sm:inline">{displayName}</span>
             )}
-            <button onClick={handleLogout} className="btn btn-ghost btn-sm gap-1 text-base-content/60">
+            <button onClick={handleLogout} className="btn btn-ghost btn-sm sm:gap-1 px-2 sm:px-3 text-base-content/60" title="Keluar">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              Keluar
+              <span className="hidden sm:inline">Keluar</span>
             </button>
             <button
-              className="btn btn-secondary btn-sm gap-2"
+              className="btn btn-secondary btn-sm sm:gap-2 px-2 sm:px-3"
               onClick={handleGeneratePdfs}
               disabled={pdfLoading}
+              title="Generate All PDFs"
             >
               {pdfLoading ? (
-                <><span className="loading loading-spinner loading-xs" /> Generating...</>
+                <><span className="loading loading-spinner loading-xs" /> <span className="hidden sm:inline">Generating...</span></>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
-                  Generate All PDFs
+                  <span className="hidden sm:inline">Generate All PDFs</span>
                 </>
               )}
             </button>
-            <Link href="/admin/upload" className="btn btn-primary btn-sm gap-2">
+            <Link href="/admin/upload" className="btn btn-primary btn-sm sm:gap-2 px-2 sm:px-3" title="Upload Excel">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
-              Upload Excel
+              <span className="hidden sm:inline">Upload Excel</span>
             </Link>
           </div>
         </div>
@@ -331,51 +332,101 @@ function ImageDownloadButton({ employee }: { employee: any }) {
 
 function BusTable({ employees }: { employees: any[] }) {
   return (
-    <table className="table table-zebra w-full text-sm">
-      <thead>
-        <tr className="text-xs text-base-content/55 uppercase tracking-wide">
-          <th>Nama</th>
-          <th className="text-center">Jml. Keluarga</th>
-          <th className="text-center">Tambahan Peserta</th>
-          <th className="text-center">Anak &lt;2 Thn</th>
-          <th>Jenis Kendaraan</th>
-          <th>No. Bus</th>
-          <th>PIC Bus</th>
-          <th>Titik Jemputan</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
+    <>
+      {/* Mobile: card list */}
+      <div className="md:hidden divide-y divide-base-300">
         {employees.map((e: any) => (
-          <tr key={e.id}>
-            <td className="font-medium">{e.name}</td>
-            <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
-            <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
-            <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
-            <td><TransportBadge type={e.transport_type} /></td>
-            <td>
-              {e.bus_number != null
-                ? <span className="font-semibold text-secondary">Bus {e.bus_number}</span>
-                : <span className="text-base-content/30">—</span>}
-            </td>
-            <td>
-              {e.is_pic_bus
-                ? <span className="text-xs font-semibold text-accent bg-accent/10 border border-accent/20 rounded-full px-2 py-0.5">⭐ PIC</span>
-                : <span className="text-base-content/30 text-xs">—</span>}
-            </td>
-            <td className="text-base-content/70">{e.pickup_point ?? '—'}</td>
-            <td>
-              {e.is_pic_bus
-                ? <div className="flex items-center gap-1">
-                    <PdfDownloadButton employee={e} />
-                    <ImageDownloadButton employee={e} />
-                  </div>
-                : <span className="text-base-content/20 text-xs px-2">—</span>}
-            </td>
-          </tr>
+          <div key={e.id} className="p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-semibold text-sm">{e.name}</p>
+              <TransportBadge type={e.transport_type} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+              <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
+              <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
+              <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
+              <CardField
+                label="No. Bus"
+                value={e.bus_number != null
+                  ? <span className="font-semibold text-secondary">Bus {e.bus_number}</span>
+                  : <span className="text-base-content/30">—</span>}
+              />
+              <CardField
+                label="PIC Bus"
+                value={e.is_pic_bus
+                  ? <span className="text-xs font-semibold text-accent bg-accent/10 border border-accent/20 rounded-full px-2 py-0.5">⭐ PIC</span>
+                  : <span className="text-base-content/30 text-xs">—</span>}
+              />
+              <CardField label="Titik Jemputan" value={<span className="text-base-content/70">{e.pickup_point ?? '—'}</span>} />
+            </div>
+
+            {e.is_pic_bus && (
+              <div className="flex items-center gap-1 pt-1">
+                <PdfDownloadButton employee={e} />
+                <ImageDownloadButton employee={e} />
+              </div>
+            )}
+          </div>
         ))}
-      </tbody>
-    </table>
+      </div>
+
+      {/* Desktop: table */}
+      <table className="table table-zebra w-full text-sm hidden md:table">
+        <thead>
+          <tr className="text-xs text-base-content/55 uppercase tracking-wide">
+            <th>Nama</th>
+            <th className="text-center">Jml. Keluarga</th>
+            <th className="text-center">Tambahan Peserta</th>
+            <th className="text-center">Anak &lt;2 Thn</th>
+            <th>Jenis Kendaraan</th>
+            <th>No. Bus</th>
+            <th>PIC Bus</th>
+            <th>Titik Jemputan</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {employees.map((e: any) => (
+            <tr key={e.id}>
+              <td className="font-medium">{e.name}</td>
+              <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
+              <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
+              <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
+              <td><TransportBadge type={e.transport_type} /></td>
+              <td>
+                {e.bus_number != null
+                  ? <span className="font-semibold text-secondary">Bus {e.bus_number}</span>
+                  : <span className="text-base-content/30">—</span>}
+              </td>
+              <td>
+                {e.is_pic_bus
+                  ? <span className="text-xs font-semibold text-accent bg-accent/10 border border-accent/20 rounded-full px-2 py-0.5">⭐ PIC</span>
+                  : <span className="text-base-content/30 text-xs">—</span>}
+              </td>
+              <td className="text-base-content/70">{e.pickup_point ?? '—'}</td>
+              <td>
+                {e.is_pic_bus
+                  ? <div className="flex items-center gap-1">
+                      <PdfDownloadButton employee={e} />
+                      <ImageDownloadButton employee={e} />
+                    </div>
+                  : <span className="text-base-content/20 text-xs px-2">—</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+function CardField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-base-content/45 uppercase tracking-wide text-[10px] mb-0.5">{label}</p>
+      <div>{value}</div>
+    </div>
   );
 }
 
@@ -392,7 +443,39 @@ function CarTable({ employees }: { employees: any[] }) {
           <span className="text-xs text-base-content/55">{switchedCount} karyawan dialihkan dari bus pada hari-H</span>
         </div>
       )}
-      <table className="table table-zebra w-full text-sm">
+      {/* Mobile: card list */}
+      <div className="md:hidden divide-y divide-base-300">
+        {employees.map((e: any) => (
+          <div key={e.id} className={`p-4 space-y-3 ${e.switched_from_bus ? 'bg-warning/5' : ''}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-sm">{e.name}</p>
+                {e.switched_from_bus && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25 mt-1">
+                    ⚠️ Pindahan Bus
+                  </span>
+                )}
+              </div>
+              <TransportBadge type={e.transport_type} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+              <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
+              <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
+              <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
+              <CardField label="Jml. Kendaraan" value={<span className="font-semibold">{e.total_vehicles ?? 0}</span>} />
+            </div>
+
+            <div className="flex items-center gap-1 pt-1">
+              <PdfDownloadButton employee={e} />
+              <ImageDownloadButton employee={e} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <table className="table table-zebra w-full text-sm hidden md:table">
         <thead>
           <tr className="text-xs text-base-content/55 uppercase tracking-wide">
             <th>Nama</th>
