@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { searchEmployees, updateEmployee, logoutApi } from '../../lib/api';
 import { clearAuth } from '../../lib/auth';
+import { BASE_PATH } from '../../lib/basePath';
 
 function QrSection() {
   const [open, setOpen] = useState(false);
@@ -22,7 +23,7 @@ function QrSection() {
           title="Ketuk untuk memperbesar"
         >
           <img
-            src="/images/ancol-qr.png"
+            src={`${BASE_PATH}/images/ancol-qr.png`}
             alt="Ancol QR Code"
             className="w-44 h-44 object-contain"
           />
@@ -42,7 +43,7 @@ function QrSection() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src="/images/ancol-qr.png"
+              src={`${BASE_PATH}/images/ancol-qr.png`}
               alt="Ancol QR Code"
               className="w-full aspect-square object-contain"
             />
@@ -118,7 +119,7 @@ export default function GateScannerPage() {
         {/* Header */}
         <div className="pt-6 pb-2 flex items-center gap-3">
           <Image
-            src="/images/logo.webp"
+            src={`${BASE_PATH}/images/logo.webp`}
             alt="JSGI Family Gathering 2026"
             width={64}
             height={64}

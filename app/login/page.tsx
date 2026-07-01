@@ -5,6 +5,7 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginApi } from '../../lib/api';
 import { saveAuth } from '../../lib/auth';
+import { BASE_PATH } from '../../lib/basePath';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="flex flex-col items-center gap-2">
             <Image
-              src="/images/logo.webp"
+              src={`${BASE_PATH}/images/logo.webp`}
               alt="Family Gathering JSGI"
               width={80}
               height={80}

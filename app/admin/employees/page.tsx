@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, downloadEmployeeImage, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
+import { BASE_PATH } from '../../../lib/basePath';
 
 type Tab = 'bus' | 'private_car';
 
@@ -67,7 +68,7 @@ export default function EmployeesPage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Image
-              src="/images/logo.webp"
+              src={`${BASE_PATH}/images/logo.webp`}
               alt="Logo"
               width={48}
               height={48}

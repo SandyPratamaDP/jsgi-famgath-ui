@@ -6,6 +6,7 @@ import { useCallback, useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadExcel, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
+import { BASE_PATH } from '../../../lib/basePath';
 
 type StatusKind = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -107,7 +108,7 @@ export default function UploadPage() {
 
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-3">
-                <Image src="/images/logo.webp" alt="Logo" width={48} height={48} className="shrink-0" style={{ filter: 'brightness(1.15) drop-shadow(0 0 4px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35)) drop-shadow(0 0 50px rgba(200,220,255,0.2))' }} />
+                <Image src={`${BASE_PATH}/images/logo.webp`} alt="Logo" width={48} height={48} className="shrink-0" style={{ filter: 'brightness(1.15) drop-shadow(0 0 4px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(255,255,255,0.35)) drop-shadow(0 0 50px rgba(200,220,255,0.2))' }} />
                 <div>
                   <h1 className="card-title text-xl">Excel Upload Dashboard</h1>
                   <p className="text-sm text-base-content/60 mt-1">

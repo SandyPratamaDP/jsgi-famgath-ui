@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { BASE_PATH } from '../lib/basePath';
 
 export default function Home() {
   return (
@@ -11,7 +12,7 @@ export default function Home() {
         {/* Logo */}
         <div className="flex justify-center">
           <Image
-            src="/images/logo.webp"
+            src={`${BASE_PATH}/images/logo.webp`}
             alt="JSGI Family Gathering 2026"
             width={220}
             height={220}
