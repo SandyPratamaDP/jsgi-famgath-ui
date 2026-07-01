@@ -5,6 +5,7 @@ import type { NextConfig } from 'next';
 const LARAVEL_INTERNAL_URL = process.env.LARAVEL_INTERNAL_URL || 'http://127.0.0.1:8000';
 
 const nextConfig: NextConfig = {
+  basePath: '/famgath',
   allowedDevOrigins: ['10.192.132.249'],
   async rewrites() {
     return [

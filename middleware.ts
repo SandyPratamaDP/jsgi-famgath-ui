@@ -37,5 +37,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|images/).*)'],
+  // '/' is needed separately: with basePath set, Next.js prepends it to these
+  // patterns, and '/((?!...).*)' alone never matches the bare basePath root.
+  matcher: ['/', '/((?!api|_next/static|_next/image|favicon.ico|images/).*)'],
 };

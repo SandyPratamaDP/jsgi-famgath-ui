@@ -2,8 +2,10 @@ import { getToken } from './auth';
 
 // Path relatif: browser cuma manggil origin Next.js sendiri, yang lalu
 // di-proxy ke Laravel internal lewat rewrite di next.config.ts.
-const API_BASE      = '/api/v1';
-const AUTH_API_BASE = '/api';
+// Prefix '/famgath' wajib disertakan manual karena basePath Next.js cuma
+// berlaku otomatis untuk routing/rewrite, bukan untuk fetch() biasa.
+const API_BASE      = '/famgath/api/v1';
+const AUTH_API_BASE = '/famgath/api';
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
