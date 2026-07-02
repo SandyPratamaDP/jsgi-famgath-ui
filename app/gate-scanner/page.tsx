@@ -86,7 +86,7 @@ export default function GateScannerPage() {
   const employee  = selectedEmployee ?? candidate;
 
   const canSwitchTransport = employee && employee.transport_type === 'bus' && !employee.is_pic_bus;
-  const showQr = employee && (employee.transport_type === 'private_car' || employee.is_pic_bus);
+  const showQr = employee && (employee.transport_type === 'private_car' || employee.transport_type === 'operational' || employee.is_pic_bus);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -216,8 +216,8 @@ export default function GateScannerPage() {
         {/* Employee result card */}
         {employee && (
           <>
-            {employee.transport_type === 'private_car'
-              ? <PrivateCarCard employee={employee} switched={employee.switched_from_bus} />
+            {employee.transport_type === 'private_car' || employee.transport_type === 'operational'
+              ? <PrivateCarCard employee={employee} switched={employee.switched_from_bus} operational={employee.transport_type === 'operational'} />
               : <BusCard employee={employee} />}
 
             {/* Emergency switch */}
@@ -255,13 +255,13 @@ export default function GateScannerPage() {
 
 // ── Cards ─────────────────────────────────────────────────────────────────────
 
-function PrivateCarCard({ employee, switched }: { employee: any; switched?: boolean }) {
+function PrivateCarCard({ employee, switched, operational }: { employee: any; switched?: boolean; operational?: boolean }) {
   return (
     <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg overflow-hidden">
       <div className={`h-1.5 bg-gradient-to-r ${switched ? 'from-warning via-orange-400 to-amber-300' : 'from-primary via-blue-400 to-secondary'}`} />
       <div className="p-4 space-y-3">
         <div className="flex flex-wrap gap-2">
-          <Chip color="primary">🚗 Mobil Pribadi</Chip>
+          <Chip color="primary">{operational ? '⚙️ Operational' : '🚗 Mobil Pribadi'}</Chip>
           {switched && <Chip color="warning">⚠️ Pindahan Bus</Chip>}
         </div>
 

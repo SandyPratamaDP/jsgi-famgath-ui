@@ -9,7 +9,7 @@ import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, downloadE
 import { clearAuth, getDisplayName } from '../../../lib/auth';
 import { BASE_PATH } from '../../../lib/basePath';
 
-type Tab = 'bus' | 'private_car';
+type Tab = 'bus' | 'private_car' | 'operational';
 
 export default function EmployeesPage() {
   const router = useRouter();
@@ -52,8 +52,9 @@ export default function EmployeesPage() {
   const all  = data?.data ?? [];
   const buses = all.filter((e: any) => e.transport_type === 'bus');
   const cars  = all.filter((e: any) => e.transport_type === 'private_car');
+  const operationals = all.filter((e: any) => e.transport_type === 'operational');
 
-  const baseList = tab === 'bus' ? buses : cars;
+  const baseList = tab === 'bus' ? buses : tab === 'private_car' ? cars : operationals;
   const employees = useMemo(() => {
     if (!search.trim()) return baseList;
     const q = search.toLowerCase();
@@ -139,6 +140,10 @@ export default function EmployeesPage() {
           <TabButton active={tab === 'private_car'} onClick={() => { setTab('private_car'); setSearch(''); }}>
             🚗 Kendaraan Pribadi
             {!isLoading && <CountBadge count={cars.length} active={tab === 'private_car'} />}
+          </TabButton>
+          <TabButton active={tab === 'operational'} onClick={() => { setTab('operational'); setSearch(''); }}>
+            ⚙️ Operational
+            {!isLoading && <CountBadge count={operationals.length} active={tab === 'operational'} />}
           </TabButton>
         </div>
 
@@ -258,6 +263,13 @@ function TransportBadge({ type }: { type: string }) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
         🚗 Pribadi
+      </span>
+    );
+  }
+  if (type === 'operational') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+        ⚙️ Operational
       </span>
     );
   }
