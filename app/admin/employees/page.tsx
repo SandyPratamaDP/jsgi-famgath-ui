@@ -61,12 +61,17 @@ export default function EmployeesPage() {
     return baseList.filter((e: any) => e.name.toLowerCase().includes(q));
   }, [baseList, search]);
 
-  const totals = useMemo(() => ({
-    karyawan:  all.length,
-    keluarga:  all.reduce((sum: number, e: any) => sum + (e.total_passengers ?? 1), 0),
-    tambahan:  all.reduce((sum: number, e: any) => sum + (e.additional_members ?? 0), 0),
-    belowTwo:  all.filter((e: any) => e.has_below_two_children).length,
-  }), [all]);
+  const totals = useMemo(() => {
+    // Operational entries are a logistics roster, not family-gathering attendees —
+    // exclude them from the headcount-facing totals.
+    const nonOperational = all.filter((e: any) => e.transport_type !== 'operational');
+    return {
+      karyawan:  nonOperational.length,
+      keluarga:  nonOperational.reduce((sum: number, e: any) => sum + (e.total_passengers ?? 1), 0),
+      tambahan:  all.reduce((sum: number, e: any) => sum + (e.additional_members ?? 0), 0),
+      belowTwo:  all.filter((e: any) => e.has_below_two_children).length,
+    };
+  }, [all]);
 
   return (
     <main className="min-h-screen p-6 bg-base-200">

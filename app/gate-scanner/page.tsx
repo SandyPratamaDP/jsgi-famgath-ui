@@ -9,14 +9,15 @@ import { searchEmployees, updateEmployee, logoutApi } from '../../lib/api';
 import { clearAuth } from '../../lib/auth';
 import { BASE_PATH } from '../../lib/basePath';
 
-function QrSection() {
+function QrSection({ operational }: { operational?: boolean }) {
   const [open, setOpen] = useState(false);
+  const qrSrc = operational ? `${BASE_PATH}/images/ancol-qr-operational.png` : `${BASE_PATH}/images/ancol-qr.png`;
 
   return (
     <>
       <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg p-5 flex flex-col items-center gap-4">
         <p className="text-[10px] font-bold text-base-content/55 uppercase tracking-widest">
-          QR Masuk Ancol
+          QR Masuk Ancol{operational && ' · Operational'}
         </p>
         <button
           onClick={() => setOpen(true)}
@@ -24,13 +25,15 @@ function QrSection() {
           title="Ketuk untuk memperbesar"
         >
           <img
-            src={`${BASE_PATH}/images/ancol-qr.png`}
+            src={qrSrc}
             alt="Ancol QR Code"
             className="w-44 h-44 object-contain"
           />
         </button>
         <p className="text-xs text-base-content/60 text-center">
-          Ketuk QR untuk memperbesar · Tunjukkan saat verifikasi pintu masuk
+          {operational
+            ? 'QR berlaku keluar-masuk berkali-kali · Ketuk untuk memperbesar'
+            : 'Ketuk QR untuk memperbesar · Tunjukkan saat verifikasi pintu masuk'}
         </p>
       </div>
 
@@ -44,7 +47,7 @@ function QrSection() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={`${BASE_PATH}/images/ancol-qr.png`}
+              src={qrSrc}
               alt="Ancol QR Code"
               className="w-full aspect-square object-contain"
             />
@@ -254,7 +257,7 @@ export default function GateScannerPage() {
             )}
 
             {/* QR Code */}
-            {showQr && <QrSection />}
+            {showQr && <QrSection operational={employee.transport_type === 'operational'} />}
           </>
         )}
 
