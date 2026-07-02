@@ -74,6 +74,12 @@ export default function WahanaScannerPage() {
     runLookup(manualCode);
   };
 
+  const handleManualCodeChange = (raw: string) => {
+    const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    const grouped = clean.match(/.{1,4}/g)?.join('-') ?? clean;
+    setManualCode(grouped);
+  };
+
   const handleCheckin = async (wahana: WahanaKey) => {
     if (!result) return;
     setActionLoading(wahana);
@@ -174,7 +180,7 @@ export default function WahanaScannerPage() {
               <input
                 type="text"
                 value={manualCode}
-                onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                onChange={(e) => handleManualCodeChange(e.target.value)}
                 placeholder="Kode manual (8 karakter)…"
                 className="flex-1 bg-transparent outline-none text-sm py-2.5 placeholder:text-base-content/35 uppercase tracking-wider"
                 autoComplete="off"
