@@ -92,6 +92,12 @@ export default function EmployeesPage() {
             {displayName && (
               <span className="text-xs text-base-content/50 hidden sm:inline">{displayName}</span>
             )}
+            <Link href="/" className="btn btn-ghost btn-sm sm:gap-1 px-2 sm:px-3 text-base-content/60" title="Home">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </Link>
             <button onClick={handleLogout} className="btn btn-ghost btn-sm sm:gap-1 px-2 sm:px-3 text-base-content/60" title="Keluar">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -149,15 +155,15 @@ export default function EmployeesPage() {
         {/* Tabs */}
         <div className="flex gap-1 bg-base-100 border border-base-300 rounded-xl p-1 w-fit">
           <TabButton active={tab === 'bus'} onClick={() => { setTab('bus'); setSearch(''); }}>
-            🚌 Bus
+            <span>🚌</span><span className="hidden sm:inline">Bus</span>
             {!isLoading && <CountBadge count={buses.length} active={tab === 'bus'} />}
           </TabButton>
           <TabButton active={tab === 'private_car'} onClick={() => { setTab('private_car'); setSearch(''); }}>
-            🚗 Kendaraan Pribadi
+            <span>🚗</span><span className="hidden sm:inline">Kendaraan Pribadi</span>
             {!isLoading && <CountBadge count={cars.length} active={tab === 'private_car'} />}
           </TabButton>
           <TabButton active={tab === 'operational'} onClick={() => { setTab('operational'); setSearch(''); }}>
-            ⚙️ Operational
+            <span>⚙️</span><span className="hidden sm:inline">Operational</span>
             {!isLoading && <CountBadge count={operationals.length} active={tab === 'operational'} />}
           </TabButton>
         </div>

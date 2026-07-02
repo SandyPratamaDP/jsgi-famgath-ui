@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
   // Already logged in → redirect away from login page
   if (pathname === '/login' && token) {
     const dest = request.nextUrl.clone();
-    dest.pathname = role === 'eo' ? '/gate-scanner' : '/';
+    dest.pathname = '/';
     return NextResponse.redirect(dest);
   }
 
@@ -26,9 +26,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // EO can only access the scanner pages
+  // EO can only access home + the scanner pages
   const eoAllowedPaths = ['/gate-scanner', '/wahana-scanner'];
-  if (role === 'eo' && !eoAllowedPaths.some((p) => pathname.startsWith(p))) {
+  const eoAllowed = pathname === '/' || eoAllowedPaths.some((p) => pathname.startsWith(p));
+  if (role === 'eo' && !eoAllowed) {
     const scannerUrl = request.nextUrl.clone();
     scannerUrl.pathname = '/gate-scanner';
     return NextResponse.redirect(scannerUrl);

@@ -18,6 +18,7 @@ export default function UploadPage() {
   const [loading, setLoading]     = useState(false);
   const [isDragging, setDragging] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [confirmPending, setConfirmPending] = useState(false);
   const inputRef                  = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setDisplayName(getDisplayName() ?? ''); }, []);
@@ -39,6 +40,7 @@ export default function UploadPage() {
     setFile(selected);
     setKind('idle');
     setMessage('');
+    setConfirmPending(false);
   };
 
   // ── click-to-browse (via ref, bypasses label issues) ────────────────────
@@ -69,8 +71,18 @@ export default function UploadPage() {
   }, []);
 
   // ── upload ───────────────────────────────────────────────────────────────
+  const handleUploadClick = () => {
+    if (!file) return;
+    if (!confirmPending) {
+      setConfirmPending(true);
+      return;
+    }
+    handleSubmit();
+  };
+
   const handleSubmit = async () => {
     if (!file) return;
+    setConfirmPending(false);
     setLoading(true);
     setKind('uploading');
     setMessage('Mengupload dan memproses file...');
@@ -120,6 +132,12 @@ export default function UploadPage() {
                 {displayName && (
                   <span className="text-xs text-base-content/50 hidden sm:inline">{displayName}</span>
                 )}
+                <Link href="/" className="btn btn-ghost btn-sm text-base-content/60" title="Home">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </Link>
                 <button onClick={handleLogout} className="btn btn-ghost btn-sm gap-1 text-base-content/60">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -184,17 +202,38 @@ export default function UploadPage() {
               </div>
             )}
 
+            {/* Overwrite warning */}
+            {confirmPending && (
+              <div className="alert alert-warning text-sm">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <span>Data karyawan yang namanya sama dengan isi file ini akan <strong>ditimpa</strong> dengan data terbaru. Pastikan file sudah benar sebelum lanjut.</span>
+              </div>
+            )}
+
             {/* Buttons */}
             <div className="flex flex-wrap gap-3">
-              <button
-                className="btn btn-primary"
-                onClick={handleSubmit}
-                disabled={!file || loading}
-              >
-                {loading && statusKind === 'uploading'
-                  ? <><span className="loading loading-spinner loading-sm" /> Mengupload...</>
-                  : 'Upload & Import'}
-              </button>
+              {confirmPending ? (
+                <>
+                  <button className="btn btn-warning" onClick={handleUploadClick} disabled={loading}>
+                    {loading && statusKind === 'uploading'
+                      ? <><span className="loading loading-spinner loading-sm" /> Mengupload...</>
+                      : 'Ya, Lanjutkan Upload'}
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setConfirmPending(false)} disabled={loading}>
+                    Batal
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={handleUploadClick}
+                  disabled={!file || loading}
+                >
+                  Upload & Import
+                </button>
+              )}
             </div>
 
           </div>

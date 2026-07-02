@@ -23,12 +23,7 @@ export default function LoginPage() {
     try {
       const data = await loginApi(username, password);
       saveAuth(data.token, data.role, data.display_name);
-
-      if (data.role === 'eo') {
-        router.replace('/gate-scanner');
-      } else {
-        router.replace('/');
-      }
+      router.replace('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login gagal.');
     } finally {
