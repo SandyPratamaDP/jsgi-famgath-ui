@@ -174,9 +174,9 @@ export default function WahanaScannerPage() {
               <input
                 type="text"
                 value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
-                placeholder="Masukkan kode QR manual…"
-                className="flex-1 bg-transparent outline-none text-sm py-2.5 placeholder:text-base-content/35"
+                onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                placeholder="Kode manual (8 karakter)…"
+                className="flex-1 bg-transparent outline-none text-sm py-2.5 placeholder:text-base-content/35 uppercase tracking-wider"
                 autoComplete="off"
               />
               <button type="submit" className="btn btn-primary btn-sm rounded-xl px-5 shrink-0 min-w-[64px]">
