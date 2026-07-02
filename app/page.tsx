@@ -26,19 +26,6 @@ export default function Home() {
         {/* Menu cards */}
         <div className="grid grid-cols-2 gap-4">
           <Link
-            href="/admin/employees"
-            className="group flex flex-col items-center gap-3 rounded-2xl bg-base-100 border border-base-300 p-6 shadow-lg hover:border-secondary/50 hover:bg-secondary/5 transition-all"
-          >
-            <div className="w-12 h-12 rounded-xl bg-secondary/15 border border-secondary/25 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-2xl">📋</span>
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-sm">Employee List</p>
-              <p className="text-xs text-base-content/55 mt-0.5">Data & upload</p>
-            </div>
-          </Link>
-
-          <Link
             href="/gate-scanner"
             className="group flex flex-col items-center gap-3 rounded-2xl bg-base-100 border border-base-300 p-6 shadow-lg hover:border-accent/50 hover:bg-accent/5 transition-all"
           >
@@ -53,14 +40,27 @@ export default function Home() {
 
           <Link
             href="/wahana-scanner"
-            className="col-span-2 group flex items-center justify-center gap-3 rounded-2xl bg-base-100 border border-base-300 p-5 shadow-lg hover:border-primary/50 hover:bg-primary/5 transition-all"
+            className="group flex flex-col items-center gap-3 rounded-2xl bg-base-100 border border-base-300 p-6 shadow-lg hover:border-primary/50 hover:bg-primary/5 transition-all"
           >
-            <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center group-hover:scale-110 transition-transform">
               <span className="text-2xl">🎢</span>
             </div>
-            <div className="text-left">
+            <div className="text-center">
               <p className="font-semibold text-sm">Wahana Scanner</p>
               <p className="text-xs text-base-content/55 mt-0.5">Sea World & Samudera Ancol</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/employees"
+            className="col-span-2 group flex items-center justify-center gap-3 rounded-2xl bg-base-100 border border-base-300 p-5 shadow-lg hover:border-secondary/50 hover:bg-secondary/5 transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-secondary/15 border border-secondary/25 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <span className="text-2xl">📋</span>
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-sm">Employee List</p>
+              <p className="text-xs text-base-content/55 mt-0.5">Data & upload</p>
             </div>
           </Link>
         </div>

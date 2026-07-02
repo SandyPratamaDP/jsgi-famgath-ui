@@ -61,6 +61,13 @@ export default function EmployeesPage() {
     return baseList.filter((e: any) => e.name.toLowerCase().includes(q));
   }, [baseList, search]);
 
+  const totals = useMemo(() => ({
+    karyawan:  all.length,
+    keluarga:  all.reduce((sum: number, e: any) => sum + (e.total_passengers ?? 1), 0),
+    tambahan:  all.reduce((sum: number, e: any) => sum + (e.additional_members ?? 0), 0),
+    belowTwo:  all.filter((e: any) => e.has_below_two_children).length,
+  }), [all]);
+
   return (
     <main className="min-h-screen p-6 bg-base-200">
       <div className="max-w-[1600px] mx-auto space-y-4">
@@ -131,6 +138,14 @@ export default function EmployeesPage() {
           </div>
         )}
 
+        {/* Stat tiles */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatTile icon="👥" iconClass="bg-primary/15 text-primary" label="Total Karyawan" value={totals.karyawan} loading={isLoading} />
+          <StatTile icon="👪" iconClass="bg-secondary/15 text-secondary" label="Total Anggota Keluarga" value={totals.keluarga} loading={isLoading} />
+          <StatTile icon="➕" iconClass="bg-info/15 text-info" label="Total Tambahan Peserta" value={totals.tambahan} loading={isLoading} />
+          <StatTile icon="👶" iconClass="bg-warning/15 text-warning" label="Total Anak <2 Tahun" value={totals.belowTwo} loading={isLoading} />
+        </div>
+
         {/* Tabs */}
         <div className="flex gap-1 bg-base-100 border border-base-300 rounded-xl p-1 w-fit">
           <TabButton active={tab === 'bus'} onClick={() => { setTab('bus'); setSearch(''); }}>
@@ -199,6 +214,24 @@ export default function EmployeesPage() {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function StatTile({ icon, iconClass, label, value, loading }: {
+  icon: string; iconClass: string; label: string; value: number; loading: boolean;
+}) {
+  return (
+    <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg p-4 flex items-center gap-3">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${iconClass}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold text-base-content/55 uppercase tracking-wide truncate">{label}</p>
+        {loading
+          ? <span className="loading loading-dots loading-sm text-base-content/40" />
+          : <p className="text-2xl font-bold leading-tight">{value.toLocaleString('id-ID')}</p>}
+      </div>
+    </div>
+  );
+}
 
 function TabButton({ active, onClick, children }: {
   active: boolean; onClick: () => void; children: React.ReactNode;
