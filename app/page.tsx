@@ -50,6 +50,19 @@ export default function Home() {
               <p className="text-xs text-base-content/55 mt-0.5">Scan kehadiran</p>
             </div>
           </Link>
+
+          <Link
+            href="/wahana-scanner"
+            className="col-span-2 group flex items-center justify-center gap-3 rounded-2xl bg-base-100 border border-base-300 p-5 shadow-lg hover:border-primary/50 hover:bg-primary/5 transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+              <span className="text-2xl">🎢</span>
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-sm">Wahana Scanner</p>
+              <p className="text-xs text-base-content/55 mt-0.5">Sea World & Samudera Ancol</p>
+            </div>
+          </Link>
         </div>
       </div>
     </main>

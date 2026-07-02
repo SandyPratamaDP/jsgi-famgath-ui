@@ -31,6 +31,16 @@ export async function fetcher(url: string, options: RequestInit = {}) {
   return response.json();
 }
 
+export class ApiError extends Error {
+  status: number;
+  body: any;
+  constructor(status: number, body: any) {
+    super(body?.message || 'Request failed');
+    this.status = status;
+    this.body = body;
+  }
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function loginApi(username: string, password: string) {
@@ -119,4 +129,34 @@ export async function generateAndDownloadPdfs() {
   }
 
   return response.blob();
+}
+
+export async function downloadEmployeeQr(id: number) {
+  const response = await fetch(`${API_BASE}/employees/${id}/qr`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to download QR');
+  return response.blob();
+}
+
+// ── Wahana check-in ──────────────────────────────────────────────────────────
+
+export async function lookupWahanaCode(code: string) {
+  const response = await fetch(`${API_BASE}/wahana/${encodeURIComponent(code)}`, {
+    headers: { Accept: 'application/json', ...authHeaders() },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new ApiError(response.status, data);
+  return data;
+}
+
+export async function checkinWahana(employeeId: number, wahana: 'sea_world' | 'samudera') {
+  const response = await fetch(`${API_BASE}/wahana/${employeeId}/checkin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeaders() },
+    body: JSON.stringify({ wahana }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new ApiError(response.status, data);
+  return data;
 }

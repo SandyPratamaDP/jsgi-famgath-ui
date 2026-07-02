@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -131,6 +132,13 @@ export default function GateScannerPage() {
             <h1 className="text-xl font-bold tracking-tight">Gate Scanner</h1>
             <p className="text-xs text-base-content/55 mt-0.5">Family Gathering 2026 · JSGI</p>
           </div>
+          <Link
+            href="/wahana-scanner"
+            title="Wahana Scanner"
+            className="btn btn-ghost btn-sm text-base-content/50 hover:text-base-content"
+          >
+            <span className="text-base leading-none">🎢</span>
+          </Link>
           <button
             onClick={handleLogout}
             title="Keluar"

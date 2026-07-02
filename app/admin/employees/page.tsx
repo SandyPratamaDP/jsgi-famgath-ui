@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, downloadEmployeeImage, logoutApi } from '../../../lib/api';
+import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
 import { BASE_PATH } from '../../../lib/basePath';
 
@@ -344,6 +344,44 @@ function ImageDownloadButton({ employee }: { employee: any }) {
   );
 }
 
+function QrDownloadButton({ employee }: { employee: any }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleDownload = async () => {
+    setLoading(true);
+    try {
+      const blob = await downloadEmployeeQr(employee.id);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `${employee.name.replace(/\s+/g, '_').toLowerCase()}_qr.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={loading}
+      title="Download QR"
+      className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-accent hover:bg-accent/10"
+    >
+      {loading
+        ? <span className="loading loading-spinner loading-xs" />
+        : (
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3m-3 3h3m-3-6h.01M17 20h.01" />
+          </svg>
+        )}
+      QR
+    </button>
+  );
+}
+
 function BusTable({ employees }: { employees: any[] }) {
   return (
     <>
@@ -376,12 +414,15 @@ function BusTable({ employees }: { employees: any[] }) {
               <CardField label="Titik Jemputan" value={<span className="text-base-content/70">{e.pickup_point ?? '—'}</span>} />
             </div>
 
-            {e.is_pic_bus && (
-              <div className="flex items-center gap-1 pt-1">
-                <PdfDownloadButton employee={e} />
-                <ImageDownloadButton employee={e} />
-              </div>
-            )}
+            <div className="flex items-center gap-1 pt-1 flex-wrap">
+              {e.is_pic_bus && (
+                <>
+                  <PdfDownloadButton employee={e} />
+                  <ImageDownloadButton employee={e} />
+                </>
+              )}
+              <QrDownloadButton employee={e} />
+            </div>
           </div>
         ))}
       </div>
@@ -423,12 +464,15 @@ function BusTable({ employees }: { employees: any[] }) {
               </td>
               <td className="text-base-content/70">{e.pickup_point ?? '—'}</td>
               <td>
-                {e.is_pic_bus
-                  ? <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {e.is_pic_bus && (
+                    <>
                       <PdfDownloadButton employee={e} />
                       <ImageDownloadButton employee={e} />
-                    </div>
-                  : <span className="text-base-content/20 text-xs px-2">—</span>}
+                    </>
+                  )}
+                  <QrDownloadButton employee={e} />
+                </div>
               </td>
             </tr>
           ))}
@@ -484,9 +528,10 @@ function CarTable({ employees }: { employees: any[] }) {
               <CardField label="Jml. Kendaraan" value={<span className="font-semibold">{e.total_vehicles ?? 0}</span>} />
             </div>
 
-            <div className="flex items-center gap-1 pt-1">
+            <div className="flex items-center gap-1 pt-1 flex-wrap">
               <PdfDownloadButton employee={e} />
               <ImageDownloadButton employee={e} />
+              <QrDownloadButton employee={e} />
             </div>
           </div>
         ))}
@@ -524,9 +569,10 @@ function CarTable({ employees }: { employees: any[] }) {
               <td><TransportBadge type={e.transport_type} /></td>
               <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
               <td>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   <PdfDownloadButton employee={e} />
                   <ImageDownloadButton employee={e} />
+                  <QrDownloadButton employee={e} />
                 </div>
               </td>
             </tr>

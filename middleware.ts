@@ -26,8 +26,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // EO can only access gate-scanner
-  if (role === 'eo' && !pathname.startsWith('/gate-scanner')) {
+  // EO can only access the scanner pages
+  const eoAllowedPaths = ['/gate-scanner', '/wahana-scanner'];
+  if (role === 'eo' && !eoAllowedPaths.some((p) => pathname.startsWith(p))) {
     const scannerUrl = request.nextUrl.clone();
     scannerUrl.pathname = '/gate-scanner';
     return NextResponse.redirect(scannerUrl);
