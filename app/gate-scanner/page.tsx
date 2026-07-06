@@ -233,6 +233,12 @@ export default function GateScannerPage() {
               ? <PrivateCarCard employee={employee} switched={employee.switched_from_bus} operational={employee.transport_type === 'operational'} />
               : <BusCard employee={employee} />}
 
+            {employee.has_below_two_children && (
+              <div className="rounded-xl bg-warning/10 border border-warning/25 px-3.5 py-2.5 text-xs text-base-content/80 leading-relaxed">
+                <span className="font-semibold text-warning">Penting:</span> Anak di bawah 2 tahun tidak dihitung dalam jumlah orang dan tidak perlu membayar tiket masuk.
+              </div>
+            )}
+
             {/* Emergency switch */}
             {canSwitchTransport && (
               <div className="rounded-2xl bg-warning/10 border border-warning/30 p-4 space-y-3">
@@ -290,6 +296,9 @@ function PrivateCarCard({ employee, switched, operational }: { employee: any; sw
 
         <div className="space-y-1 pt-2 border-t border-base-300">
           <InfoRow icon="👥" label="Headcount" value={`${employee.total_passengers ?? 1} orang`} accent />
+          {employee.additional_members > 0 && (
+            <InfoRow icon="➕" label="Tambahan Peserta" value={`${employee.additional_members} orang`} />
+          )}
         </div>
       </div>
     </div>
@@ -319,6 +328,9 @@ function BusCard({ employee }: { employee: any }) {
           )}
           {employee.pickup_point && (
             <InfoRow icon="📍" label="Titik Jemputan" value={employee.pickup_point} />
+          )}
+          {employee.additional_members > 0 && (
+            <InfoRow icon="➕" label="Tambahan Peserta" value={`${employee.additional_members} orang`} />
           )}
         </div>
       </div>
