@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { fetchEmployees, generateAndDownloadPdfs, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, logoutApi } from '../../../lib/api';
+import { fetchEmployees, blastTicketEmail, sendEmployeeEmail, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
 import { BASE_PATH } from '../../../lib/basePath';
 
@@ -15,8 +16,9 @@ export default function EmployeesPage() {
   const router = useRouter();
   const [tab, setTab]           = useState<Tab>('bus');
   const [search, setSearch]     = useState('');
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState('');
+  const [blastLoading, setBlastLoading] = useState(false);
+  const [blastMessage, setBlastMessage] = useState('');
+  const [blastIsError, setBlastIsError] = useState(false);
   const [displayName, setDisplayName] = useState('');
 
   useEffect(() => { setDisplayName(getDisplayName() ?? ''); }, []);
@@ -31,21 +33,21 @@ export default function EmployeesPage() {
     router.replace('/login');
   };
 
-  const handleGeneratePdfs = async () => {
-    setPdfLoading(true);
-    setPdfError('');
+  const handleBlastEmail = async () => {
+    if (!window.confirm('Kirim email tiket ke semua karyawan yang belum pernah menerima email? Aksi ini tidak bisa dibatalkan.')) {
+      return;
+    }
+    setBlastLoading(true);
+    setBlastMessage('');
+    setBlastIsError(false);
     try {
-      const blob = await generateAndDownloadPdfs();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = 'family-gathering-tickets.zip';
-      a.click();
-      URL.revokeObjectURL(url);
+      const result = await blastTicketEmail();
+      setBlastMessage(`Blast email dimulai untuk ${result.count ?? 0} karyawan.`);
     } catch {
-      setPdfError('Gagal generate PDF. Pastikan data sudah diimport terlebih dahulu.');
+      setBlastIsError(true);
+      setBlastMessage('Gagal memulai blast email. Pastikan PDF sudah selesai di-generate.');
     } finally {
-      setPdfLoading(false);
+      setBlastLoading(false);
     }
   };
 
@@ -112,19 +114,19 @@ export default function EmployeesPage() {
             </button>
             <button
               className="btn btn-secondary btn-sm sm:gap-2 px-2 sm:px-3"
-              onClick={handleGeneratePdfs}
-              disabled={pdfLoading}
-              title="Generate All PDFs"
+              onClick={handleBlastEmail}
+              disabled={blastLoading}
+              title="Blast Email"
             >
-              {pdfLoading ? (
-                <><span className="loading loading-spinner loading-xs" /> <span className="hidden sm:inline">Generating...</span></>
+              {blastLoading ? (
+                <><span className="loading loading-spinner loading-xs" /> <span className="hidden sm:inline">Mengirim...</span></>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span className="hidden sm:inline">Generate All PDFs</span>
+                  <span className="hidden sm:inline">Blast Email</span>
                 </>
               )}
             </button>
@@ -138,14 +140,14 @@ export default function EmployeesPage() {
           </div>
         </div>
 
-        {/* PDF error */}
-        {pdfError && (
-          <div className="alert alert-error text-sm py-2">
+        {/* Blast email result */}
+        {blastMessage && (
+          <div className={`alert text-sm py-2 ${blastIsError ? 'alert-error' : 'alert-success'}`}>
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             </svg>
-            <span>{pdfError}</span>
-            <button onClick={() => setPdfError('')} className="ml-auto text-base-content/50 hover:text-base-content">✕</button>
+            <span>{blastMessage}</span>
+            <button onClick={() => setBlastMessage('')} className="ml-auto text-base-content/50 hover:text-base-content">✕</button>
           </div>
         )}
 
@@ -324,117 +326,166 @@ function TransportBadge({ type }: { type: string }) {
   );
 }
 
-function PdfDownloadButton({ employee }: { employee: any }) {
-  const [loading, setLoading] = useState(false);
+function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
+  employee: any; showTicketFiles: boolean; showSendEmail: boolean;
+}) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
 
-  const handleDownload = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 3000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
+  // Menu is portaled + position:fixed so it's never clipped by the scrollable
+  // table wrapper or the rounded card's overflow-hidden.
+  useEffect(() => {
+    if (!open) return;
+
+    const handleOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const insideTrigger = triggerRef.current?.contains(target);
+      const insideMenu    = menuRef.current?.contains(target);
+      if (!insideTrigger && !insideMenu) {
+        setOpen(false);
+      }
+    };
+    const handleReposition = () => setOpen(false);
+
+    document.addEventListener('mousedown', handleOutside);
+    window.addEventListener('scroll', handleReposition, true);
+    window.addEventListener('resize', handleReposition);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      window.removeEventListener('scroll', handleReposition, true);
+      window.removeEventListener('resize', handleReposition);
+    };
+  }, [open]);
+
+  const toggleOpen = () => {
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen((v) => !v);
+  };
+
+  const download = async (
+    fetcher: (id: number) => Promise<Blob>,
+    key: string,
+    suffix: string,
+    ext: string,
+  ) => {
+    setOpen(false);
+    setBusy(key);
     try {
-      const blob = await downloadEmployeePdf(employee.id);
+      const blob = await fetcher(employee.id);
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
-      a.download = `${employee.name.replace(/\s+/g, '_').toLowerCase()}_ticket.pdf`;
+      a.download = `${employee.name.replace(/\s+/g, '_').toLowerCase()}_${suffix}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
-      setLoading(false);
+      setBusy(null);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    setOpen(false);
+    if (!window.confirm(`Kirim/kirim ulang email tiket ke ${employee.name}?`)) return;
+    setBusy('email');
+    setFeedback(null);
+    try {
+      await sendEmployeeEmail(employee.id);
+      setFeedback({ ok: true, text: 'Terkirim' });
+    } catch {
+      setFeedback({ ok: false, text: 'Gagal kirim' });
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      title="Download PDF"
-      className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-primary hover:bg-primary/10"
-    >
-      {loading
-        ? <span className="loading loading-spinner loading-xs" />
-        : (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
-          </svg>
-        )}
-      PDF
-    </button>
-  );
-}
+    <div className="flex items-center gap-1.5 justify-end">
+      {feedback && (
+        <span className={`text-[10px] font-semibold ${feedback.ok ? 'text-success' : 'text-error'}`}>
+          {feedback.text}
+        </span>
+      )}
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={toggleOpen}
+        className="btn btn-outline btn-xs px-2.5 border-base-300 hover:border-primary hover:bg-primary/10"
+        title="Aksi tiket"
+      >
+        {busy
+          ? <span className="loading loading-spinner loading-xs" />
+          : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
+            </svg>
+          )}
+      </button>
 
-function ImageDownloadButton({ employee }: { employee: any }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleDownload = async () => {
-    setLoading(true);
-    try {
-      const blob = await downloadEmployeeImage(employee.id);
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `${employee.name.replace(/\s+/g, '_').toLowerCase()}_ticket.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      title="Download Image"
-      className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-secondary hover:bg-secondary/10"
-    >
-      {loading
-        ? <span className="loading loading-spinner loading-xs" />
-        : (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        )}
-      IMG
-    </button>
-  );
-}
-
-function QrDownloadButton({ employee }: { employee: any }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleDownload = async () => {
-    setLoading(true);
-    try {
-      const blob = await downloadEmployeeQr(employee.id);
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `${employee.name.replace(/\s+/g, '_').toLowerCase()}_qr.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      title="Download QR"
-      className="btn btn-ghost btn-xs gap-1 text-base-content/60 hover:text-accent hover:bg-accent/10"
-    >
-      {loading
-        ? <span className="loading loading-spinner loading-xs" />
-        : (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3m-3 3h3m-3-6h.01M17 20h.01" />
-          </svg>
-        )}
-      QR
-    </button>
+      {open && menuPos && createPortal(
+        <ul
+          ref={menuRef}
+          style={{ position: 'fixed', top: menuPos.top, right: menuPos.right }}
+          className="menu menu-sm z-[100] bg-base-100 rounded-box border border-base-300 shadow-lg w-48 p-1"
+        >
+          {showTicketFiles && (
+            <>
+              <li>
+                <button onClick={() => download(downloadEmployeePdf, 'pdf', 'ticket', 'pdf')} disabled={busy === 'pdf'}>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+                  </svg>
+                  Download PDF
+                </button>
+              </li>
+              <li>
+                <button onClick={() => download(downloadEmployeeImage, 'image', 'ticket', 'png')} disabled={busy === 'image'}>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Download Image
+                </button>
+              </li>
+            </>
+          )}
+          <li>
+            <button onClick={() => download(downloadEmployeeQr, 'qr', 'qr', 'png')} disabled={busy === 'qr'}>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3m-3 3h3m-3-6h.01M17 20h.01" />
+              </svg>
+              Download QR
+            </button>
+          </li>
+          {showSendEmail && (
+            <li>
+              <button onClick={handleSendEmail} disabled={busy === 'email'}>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Kirim Email
+              </button>
+            </li>
+          )}
+        </ul>,
+        document.body
+      )}
+    </div>
   );
 }
 
@@ -470,14 +521,8 @@ function BusTable({ employees }: { employees: any[] }) {
               <CardField label="Titik Jemputan" value={<span className="text-base-content/70">{e.pickup_point ?? '—'}</span>} />
             </div>
 
-            <div className="flex items-center gap-1 pt-1 flex-wrap">
-              {e.is_pic_bus && (
-                <>
-                  <PdfDownloadButton employee={e} />
-                  <ImageDownloadButton employee={e} />
-                </>
-              )}
-              <QrDownloadButton employee={e} />
+            <div className="flex items-center pt-1">
+              <EmployeeActionsMenu employee={e} showTicketFiles={!!e.is_pic_bus} showSendEmail={false} />
             </div>
           </div>
         ))}
@@ -520,15 +565,7 @@ function BusTable({ employees }: { employees: any[] }) {
               </td>
               <td className="text-base-content/70">{e.pickup_point ?? '—'}</td>
               <td>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {e.is_pic_bus && (
-                    <>
-                      <PdfDownloadButton employee={e} />
-                      <ImageDownloadButton employee={e} />
-                    </>
-                  )}
-                  <QrDownloadButton employee={e} />
-                </div>
+                <EmployeeActionsMenu employee={e} showTicketFiles={!!e.is_pic_bus} showSendEmail={false} />
               </td>
             </tr>
           ))}
@@ -584,10 +621,8 @@ function CarTable({ employees }: { employees: any[] }) {
               <CardField label="Jml. Kendaraan" value={<span className="font-semibold">{e.total_vehicles ?? 0}</span>} />
             </div>
 
-            <div className="flex items-center gap-1 pt-1 flex-wrap">
-              <PdfDownloadButton employee={e} />
-              <ImageDownloadButton employee={e} />
-              <QrDownloadButton employee={e} />
+            <div className="flex items-center pt-1">
+              <EmployeeActionsMenu employee={e} showTicketFiles={true} showSendEmail={!!e.email} />
             </div>
           </div>
         ))}
@@ -625,11 +660,7 @@ function CarTable({ employees }: { employees: any[] }) {
               <td><TransportBadge type={e.transport_type} /></td>
               <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
               <td>
-                <div className="flex items-center gap-1 flex-wrap">
-                  <PdfDownloadButton employee={e} />
-                  <ImageDownloadButton employee={e} />
-                  <QrDownloadButton employee={e} />
-                </div>
+                <EmployeeActionsMenu employee={e} showTicketFiles={true} showSendEmail={!!e.email} />
               </td>
             </tr>
           ))}
