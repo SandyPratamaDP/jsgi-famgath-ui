@@ -118,17 +118,30 @@ export async function downloadEmployeeImage(id: number) {
   return response.blob();
 }
 
-export async function generateAndDownloadPdfs() {
-  const response = await fetch(`${API_BASE}/employees/generate-pdfs`, {
+export async function blastTicketEmail() {
+  const response = await fetch(`${API_BASE}/employees/blast-email`, {
     method: 'POST',
     headers: authHeaders(),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to generate PDF bundle');
+    throw new Error('Failed to blast ticket email');
   }
 
-  return response.blob();
+  return response.json();
+}
+
+export async function sendEmployeeEmail(id: number) {
+  const response = await fetch(`${API_BASE}/employees/${id}/send-email`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send employee ticket email');
+  }
+
+  return response.json();
 }
 
 export async function downloadEmployeeQr(id: number) {

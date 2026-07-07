@@ -90,7 +90,7 @@ export default function UploadPage() {
     try {
       const result = await uploadExcel(file);
       setKind('success');
-      setMessage(`Import selesai — ${result.count ?? 0} karyawan berhasil diimport.`);
+      setMessage(`Import selesai — ${result.count ?? 0} karyawan berhasil diimport. PDF & gambar tiket sedang di-generate di background.`);
       setFile(null);
       if (inputRef.current) inputRef.current.value = '';
     } catch {
