@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import useSWR from 'swr';
-import { fetchEmployees, blastTicketEmail, sendEmployeeEmail, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, logoutApi } from '../../../lib/api';
+import useSWR, { mutate } from 'swr';
+import { fetchEmployees, blastTicketEmail, sendEmployeeEmail, updateEmployee, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
 import { BASE_PATH } from '../../../lib/basePath';
 
@@ -427,6 +427,32 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
     }
   };
 
+  const canSwitchTransport = employee.transport_type === 'bus' || employee.transport_type === 'private_car';
+  const switchTarget = employee.transport_type === 'bus' ? 'private_car' : 'bus';
+  const switchTargetLabel = switchTarget === 'private_car' ? 'Kendaraan Pribadi' : 'Bus';
+
+  const handleSwitchTransport = async () => {
+    setOpen(false);
+    if (!window.confirm(`Pindahkan ${employee.name} ke ${switchTargetLabel}?`)) return;
+    setBusy('switch');
+    setFeedback(null);
+    try {
+      // Manual admin reassignment, not a gate-scanner anomaly — never carry the warning flag.
+      // Vehicle count follows the new category: 1 for pribadi, 0 for bus.
+      await updateEmployee(employee.id, {
+        transport_type: switchTarget,
+        switched_from_bus: false,
+        total_vehicles: switchTarget === 'private_car' ? 1 : 0,
+      });
+      await mutate('employees');
+      setFeedback({ ok: true, text: 'Dipindahkan' });
+    } catch {
+      setFeedback({ ok: false, text: 'Gagal pindah' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="flex items-center gap-1.5 justify-end">
       {feedback && (
@@ -495,6 +521,17 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
                     d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 Kirim Email
+              </button>
+            </li>
+          )}
+          {canSwitchTransport && (
+            <li>
+              <button onClick={handleSwitchTransport} disabled={busy === 'switch'}>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                Pindahkan ke {switchTargetLabel}
               </button>
             </li>
           )}

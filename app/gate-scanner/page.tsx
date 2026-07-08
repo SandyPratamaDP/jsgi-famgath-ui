@@ -134,7 +134,7 @@ export default function GateScannerPage() {
     setStatusMsg('Menyimpan…');
     try {
       const res = await updateEmployee(employee.id, {
-        total_vehicles: 1,
+        total_vehicles: 0,
         transport_type: 'private_car',
       });
       setSelectedEmployee(res.data);
