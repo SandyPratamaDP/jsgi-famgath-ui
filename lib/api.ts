@@ -152,6 +152,32 @@ export async function downloadEmployeeQr(id: number) {
   return response.blob();
 }
 
+// ── Ancol gate-entry QR ──────────────────────────────────────────────────────
+
+export type AncolQrCategory = 'local' | 'expat' | 'operational';
+
+export async function fetchAncolQr(category: AncolQrCategory) {
+  const response = await fetch(`${API_BASE}/ancol-qr/${category}`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to load QR');
+  return response.blob();
+}
+
+export async function uploadAncolQr(category: AncolQrCategory, file: File) {
+  const form = new FormData();
+  form.append('image', file);
+
+  const response = await fetch(`${API_BASE}/ancol-qr/${category}`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: form,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new ApiError(response.status, data);
+  return data;
+}
+
 // ── Wahana check-in ──────────────────────────────────────────────────────────
 
 export async function searchWahana(query: string) {

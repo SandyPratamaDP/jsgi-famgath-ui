@@ -130,6 +130,13 @@ export default function EmployeesPage() {
                 </>
               )}
             </button>
+            <Link href="/admin/ancol-qr" className="btn btn-secondary btn-sm sm:gap-2 px-2 sm:px-3" title="QR Ancol">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 7V5a2 2 0 012-2h2M3 17v2a2 2 0 002 2h2m10-16h2a2 2 0 012 2v2m-4 14h2a2 2 0 002-2v-2M7 12h10" />
+              </svg>
+              <span className="hidden sm:inline">QR Ancol</span>
+            </Link>
             <Link href="/admin/upload" className="btn btn-primary btn-sm sm:gap-2 px-2 sm:px-3" title="Upload Excel">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
