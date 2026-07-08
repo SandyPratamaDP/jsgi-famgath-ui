@@ -154,13 +154,8 @@ export async function downloadEmployeeQr(id: number) {
 
 // ── Wahana check-in ──────────────────────────────────────────────────────────
 
-export async function lookupWahanaCode(code: string) {
-  const response = await fetch(`${API_BASE}/wahana/${encodeURIComponent(code)}`, {
-    headers: { Accept: 'application/json', ...authHeaders() },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ApiError(response.status, data);
-  return data;
+export async function searchWahana(query: string) {
+  return fetcher(`/wahana/search?query=${encodeURIComponent(query)}`);
 }
 
 export async function checkinWahana(employeeId: number, wahana: 'sea_world' | 'samudera') {

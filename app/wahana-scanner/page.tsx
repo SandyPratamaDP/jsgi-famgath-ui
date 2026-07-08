@@ -2,13 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { lookupWahanaCode, checkinWahana, logoutApi, ApiError } from '../../lib/api';
+import useSWR from 'swr';
+import { searchWahana, checkinWahana, logoutApi, ApiError } from '../../lib/api';
 import { clearAuth } from '../../lib/auth';
 import { BASE_PATH } from '../../lib/basePath';
-
-const SCANNER_ELEMENT_ID = 'wahana-qr-reader';
 
 type WahanaKey = 'sea_world' | 'samudera';
 
@@ -33,10 +32,9 @@ const WAHANA_LABELS: Record<WahanaKey, string> = {
 
 export default function WahanaScannerPage() {
   const router = useRouter();
-  const [mode, setMode]               = useState<'idle' | 'scanning'>('idle');
-  const [manualCode, setManualCode]   = useState('');
-  const [loading, setLoading]         = useState(false);
-  const [result, setResult]           = useState<ScanResult | null>(null);
+  const [query, setQuery]             = useState('');
+  const [searchTerm, setSearchTerm]   = useState('');
+  const [selectedResult, setSelectedResult] = useState<ScanResult | null>(null);
   const [errorMsg, setErrorMsg]       = useState('');
   const [actionLoading, setActionLoading] = useState<WahanaKey | null>(null);
 
@@ -46,38 +44,21 @@ export default function WahanaScannerPage() {
     router.replace('/login');
   };
 
-  const runLookup = async (code: string) => {
-    const trimmed = code.trim();
-    if (!trimmed || loading) return;
+  const { data, error, isLoading } = useSWR(
+    searchTerm ? ['wahana-search', searchTerm] : null,
+    () => searchWahana(searchTerm),
+    { revalidateOnFocus: false }
+  );
 
-    setLoading(true);
-    setErrorMsg('');
-    setMode('idle');
+  const results   = data?.data ?? [];
+  const candidate = results.length === 1 ? (results[0] ?? null) : null;
+  const result    = selectedResult ?? candidate;
 
-    try {
-      const res = await lookupWahanaCode(trimmed);
-      setResult(res.data);
-    } catch (err) {
-      setResult(null);
-      setErrorMsg(
-        err instanceof ApiError && err.status === 404
-          ? 'Kode QR tidak ditemukan.'
-          : 'Gagal memuat data. Coba lagi.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleManualSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    runLookup(manualCode);
-  };
-
-  const handleManualCodeChange = (raw: string) => {
-    const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
-    const grouped = clean.match(/.{1,4}/g)?.join('-') ?? clean;
-    setManualCode(grouped);
+    setSelectedResult(null);
+    setErrorMsg('');
+    setSearchTerm(query.trim());
   };
 
   const handleCheckin = async (wahana: WahanaKey) => {
@@ -87,10 +68,10 @@ export default function WahanaScannerPage() {
 
     try {
       const res = await checkinWahana(result.id, wahana);
-      setResult({ ...result, checkins: { ...result.checkins, [wahana]: res.data } });
+      setSelectedResult({ ...result, checkins: { ...result.checkins, [wahana]: res.data } });
     } catch (err) {
       if (err instanceof ApiError && err.status === 409 && err.body?.data) {
-        setResult({ ...result, checkins: { ...result.checkins, [wahana]: err.body.data } });
+        setSelectedResult({ ...result, checkins: { ...result.checkins, [wahana]: err.body.data } });
       } else {
         setErrorMsg('Gagal menyimpan check-in. Coba lagi.');
       }
@@ -100,10 +81,10 @@ export default function WahanaScannerPage() {
   };
 
   const handleScanNext = () => {
-    setResult(null);
+    setSelectedResult(null);
     setErrorMsg('');
-    setManualCode('');
-    setMode('idle');
+    setQuery('');
+    setSearchTerm('');
   };
 
   return (
@@ -162,45 +143,64 @@ export default function WahanaScannerPage() {
         {/* Scan input area */}
         {!result && (
           <div className="space-y-3">
-            {mode === 'idle' && (
-              <button
-                onClick={() => setMode('scanning')}
-                className="btn btn-primary w-full rounded-2xl gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M3 7V5a2 2 0 012-2h2M3 17v2a2 2 0 002 2h2m10-16h2a2 2 0 012 2v2m-4 14h2a2 2 0 002-2v-2M7 12h10" />
-                </svg>
-                Mulai Scan Kamera
-              </button>
-            )}
-
-            {mode === 'scanning' && (
-              <CameraScanner onDecode={runLookup} onCancel={() => setMode('idle')} />
-            )}
-
             <form
-              onSubmit={handleManualSubmit}
+              onSubmit={handleSearch}
               className="flex items-center gap-2 bg-base-100 rounded-2xl border border-base-300 shadow-xl px-4 py-2 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all"
             >
               <svg className="w-4 h-4 text-base-content/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 4v16m8-8H4" />
+                <circle cx="11" cy="11" r="8" strokeWidth="2" />
+                <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
               </svg>
               <input
                 type="text"
-                value={manualCode}
-                onChange={(e) => handleManualCodeChange(e.target.value)}
-                placeholder="Kode manual (8 karakter)…"
-                className="flex-1 bg-transparent outline-none text-sm py-2.5 placeholder:text-base-content/35 uppercase tracking-wider"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ketik nama…"
+                className="flex-1 bg-transparent outline-none text-sm py-2.5 placeholder:text-base-content/35"
                 autoComplete="off"
               />
               <button type="submit" className="btn btn-primary btn-sm rounded-xl px-5 shrink-0 min-w-[64px]">
-                {loading
+                {isLoading
                   ? <span className="loading loading-spinner loading-xs" />
                   : 'Cari'}
               </button>
             </form>
+          </div>
+        )}
+
+        {error && (
+          <p className="text-xs text-error text-center">Pencarian gagal.</p>
+        )}
+        {!isLoading && !error && results.length === 0 && searchTerm && (
+          <p className="text-xs text-base-content/60 text-center">
+            Tidak ditemukan untuk &quot;{searchTerm}&quot;
+          </p>
+        )}
+
+        {/* Multi-result picker */}
+        {!isLoading && !error && results.length > 1 && !selectedResult && (
+          <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg overflow-hidden">
+            <p className="text-[10px] font-bold text-base-content/55 uppercase tracking-widest px-4 pt-3 pb-1">
+              Beberapa hasil — pilih satu
+            </p>
+            <div className="divide-y divide-base-300">
+              {results.map((item: ScanResult) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-primary/10 active:bg-primary/20 transition-colors text-left"
+                  onClick={() => setSelectedResult(item)}
+                >
+                  <div>
+                    <p className="font-semibold text-sm">{item.name}</p>
+                    <p className="text-xs text-base-content/55 mt-0.5">{item.total_passengers} orang</p>
+                  </div>
+                  <svg className="w-4 h-4 text-base-content/35 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="m9 18 6-6-6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -252,56 +252,6 @@ export default function WahanaScannerPage() {
 
       </div>
     </main>
-  );
-}
-
-// ── Camera ────────────────────────────────────────────────────────────────────
-
-function CameraScanner({ onDecode, onCancel }: { onDecode: (code: string) => void; onCancel: () => void }) {
-  const instanceRef  = useRef<any>(null);
-  const onDecodeRef  = useRef(onDecode);
-  onDecodeRef.current = onDecode;
-  const [permissionError, setPermissionError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const { Html5Qrcode } = await import('html5-qrcode');
-      if (cancelled) return;
-
-      const instance = new Html5Qrcode(SCANNER_ELEMENT_ID);
-      instanceRef.current = instance;
-
-      try {
-        await instance.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: 250 },
-          (decodedText: string) => onDecodeRef.current(decodedText),
-          () => {}
-        );
-      } catch {
-        if (!cancelled) {
-          setPermissionError('Tidak bisa mengakses kamera. Periksa izin kamera browser, atau gunakan input manual di bawah.');
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      const instance = instanceRef.current;
-      if (instance) {
-        instance.stop().then(() => instance.clear()).catch(() => {});
-      }
-    };
-  }, []);
-
-  return (
-    <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg p-4 space-y-3">
-      <div id={SCANNER_ELEMENT_ID} className="rounded-xl overflow-hidden" />
-      {permissionError && <p className="text-xs text-error text-center">{permissionError}</p>}
-      <button onClick={onCancel} className="btn btn-ghost btn-sm w-full">Batal / Tutup Kamera</button>
-    </div>
   );
 }
 
