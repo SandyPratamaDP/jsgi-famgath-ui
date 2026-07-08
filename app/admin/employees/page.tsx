@@ -538,7 +538,7 @@ function BusTable({ employees }: { employees: any[] }) {
             </div>
 
             <div className="flex items-center pt-1">
-              <EmployeeActionsMenu employee={e} showTicketFiles={!!e.is_pic_bus} showSendEmail={false} />
+              <EmployeeActionsMenu employee={e} showTicketFiles={!!e.is_pic_bus} showSendEmail={!!e.is_pic_bus && !!e.email} />
             </div>
           </div>
         ))}
@@ -581,7 +581,7 @@ function BusTable({ employees }: { employees: any[] }) {
               </td>
               <td className="text-base-content/70">{e.pickup_point ?? '—'}</td>
               <td>
-                <EmployeeActionsMenu employee={e} showTicketFiles={!!e.is_pic_bus} showSendEmail={false} />
+                <EmployeeActionsMenu employee={e} showTicketFiles={!!e.is_pic_bus} showSendEmail={!!e.is_pic_bus && !!e.email} />
               </td>
             </tr>
           ))}
