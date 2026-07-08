@@ -12,6 +12,9 @@ import { BASE_PATH } from '../../../lib/basePath';
 
 type Tab = 'bus' | 'private_car' | 'operational';
 
+// Must match the menu's `w-48` Tailwind class below.
+const MENU_WIDTH = 192;
+
 export default function EmployeesPage() {
   const router = useRouter();
   const [tab, setTab]           = useState<Tab>('bus');
@@ -339,7 +342,7 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
   const [busy, setBusy] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [open, setOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLUListElement>(null);
 
@@ -377,7 +380,13 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
   const toggleOpen = () => {
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+      // Prefer right-aligning the menu with the trigger (like a native dropdown),
+      // but clamp so it never runs off either edge — the trigger can sit near the
+      // left edge of the screen in the mobile card layout, not just the far right
+      // like in the desktop table.
+      const desiredLeft = rect.right - MENU_WIDTH;
+      const left = Math.min(Math.max(desiredLeft, 8), window.innerWidth - MENU_WIDTH - 8);
+      setMenuPos({ top: rect.bottom + 4, left });
     }
     setOpen((v) => !v);
   };
@@ -444,7 +453,7 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
       {open && menuPos && createPortal(
         <ul
           ref={menuRef}
-          style={{ position: 'fixed', top: menuPos.top, right: menuPos.right }}
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
           className="menu menu-sm z-[100] bg-base-100 rounded-box border border-base-300 shadow-lg w-48 p-1"
         >
           {showTicketFiles && (
