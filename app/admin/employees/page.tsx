@@ -98,6 +98,22 @@ export default function EmployeesPage() {
     };
   }, [all]);
 
+  const ticketStats = useMemo(() => {
+    // Only these employees ever get an individual ticket file generated — regular
+    // bus riders share their PIC's manifest ticket and have no pdf_filename of their own.
+    const eligible = all.filter((e: any) =>
+      e.transport_type === 'private_car' || e.transport_type === 'operational' || e.is_pic_bus);
+    return {
+      generated: eligible.filter((e: any) => !!e.pdf_filename).length,
+      eligible:  eligible.length,
+    };
+  }, [all]);
+
+  // Blast Email attaches the generated PDF — block it until every eligible employee's
+  // ticket has finished generating (and there's at least one to send), otherwise early
+  // sends would go out with no attachment, or against an empty/not-yet-uploaded dataset.
+  const ticketsReady = ticketStats.eligible > 0 && ticketStats.generated >= ticketStats.eligible;
+
   return (
     <main className="min-h-screen p-6 bg-base-200">
       <div className="max-w-[1600px] mx-auto space-y-4">
@@ -138,8 +154,14 @@ export default function EmployeesPage() {
             <button
               className="btn btn-secondary btn-sm sm:gap-2 px-2 sm:px-3"
               onClick={handleBlastEmail}
-              disabled={blastLoading}
-              title="Blast Email"
+              disabled={blastLoading || !ticketsReady}
+              title={
+                ticketsReady
+                  ? 'Blast Email'
+                  : ticketStats.eligible === 0
+                    ? 'Belum ada tiket yang perlu digenerate'
+                    : `Tunggu semua tiket selesai digenerate (${ticketStats.generated}/${ticketStats.eligible})`
+              }
             >
               {blastLoading ? (
                 <><span className="loading loading-spinner loading-xs" /> <span className="hidden sm:inline">Mengirim...</span></>
@@ -211,11 +233,12 @@ export default function EmployeesPage() {
         )}
 
         {/* Stat tiles */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <StatTile icon="👥" iconClass="bg-primary/15 text-primary" label="Total Karyawan" value={totals.karyawan} loading={isLoading} />
           <StatTile icon="👪" iconClass="bg-secondary/15 text-secondary" label="Total Anggota Keluarga" value={totals.keluarga} loading={isLoading} />
           <StatTile icon="➕" iconClass="bg-info/15 text-info" label="Total Tambahan Peserta" value={totals.tambahan} loading={isLoading} />
           <StatTile icon="👶" iconClass="bg-warning/15 text-warning" label="Total Anak <2 Tahun" value={totals.belowTwo} loading={isLoading} />
+          <TicketProgressTile generated={ticketStats.generated} eligible={ticketStats.eligible} loading={isLoading} />
         </div>
 
         {/* Tabs */}
@@ -305,6 +328,48 @@ function StatTile({ icon, iconClass, label, value, loading }: {
   );
 }
 
+function TicketProgressTile({ generated, eligible, loading }: {
+  generated: number; eligible: number; loading: boolean;
+}) {
+  const done = eligible > 0 && generated >= eligible;
+  return (
+    <div className="rounded-2xl bg-base-100 border border-base-300 shadow-lg p-4 flex items-center gap-3">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${done ? 'bg-success/15 text-success' : 'bg-accent/15 text-accent'}`}>
+        🎫
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold text-base-content/55 uppercase tracking-wide truncate">Tiket Tergenerate</p>
+        {loading
+          ? <span className="loading loading-dots loading-sm text-base-content/40" />
+          : (
+            <p className="text-2xl font-bold leading-tight">
+              {generated.toLocaleString('id-ID')}<span className="text-base-content/40">/{eligible.toLocaleString('id-ID')}</span>
+            </p>
+          )}
+      </div>
+    </div>
+  );
+}
+
+// Dot before an employee's name: green once their individual ticket PDF/image has
+// finished generating, yellow while the async job (kicked off right after upload)
+// is still working through the queue. No dot at all for employees who never get
+// an individual ticket (regular bus riders share their PIC's manifest ticket).
+function TicketStatusDot({ employee }: { employee: any }) {
+  const eligible = employee.transport_type === 'private_car'
+    || employee.transport_type === 'operational'
+    || employee.is_pic_bus;
+  if (!eligible) return null;
+
+  const generated = !!employee.pdf_filename;
+  return (
+    <span
+      className={`inline-block w-2 h-2 rounded-full shrink-0 ${generated ? 'bg-success' : 'bg-warning animate-pulse'}`}
+      title={generated ? 'Tiket sudah tergenerate' : 'Tiket sedang menunggu digenerate'}
+    />
+  );
+}
+
 function TabButton({ active, onClick, children }: {
   active: boolean; onClick: () => void; children: React.ReactNode;
 }) {
@@ -361,6 +426,19 @@ function MaskedEmail({ email }: { email?: string | null }) {
   const masked = maskEmail(email);
   if (!masked) return <span className="text-base-content/30 text-xs">—</span>;
   return <span className="text-base-content/60 text-xs">{masked}</span>;
+}
+
+function EmailSentBadge({ sentAt }: { sentAt?: string | null }) {
+  if (!sentAt) return null;
+  const title = `Terkirim ${new Date(sentAt).toLocaleString('id-ID')}`;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-success/10 text-success border border-success/20 shrink-0"
+      title={title}
+    >
+      ✓ Terkirim
+    </span>
+  );
 }
 
 function TransportBadge({ type }: { type: string }) {
@@ -599,12 +677,15 @@ function BusTable({ employees }: { employees: any[] }) {
         {employees.map((e: any) => (
           <div key={e.id} className="p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
-              <p className="font-semibold text-sm">{e.name}</p>
+              <p className="font-semibold text-sm flex items-center gap-1.5">
+                <TicketStatusDot employee={e} />
+                {e.name}
+              </p>
               <TransportBadge type={e.transport_type} />
             </div>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-              <CardField label="Email" value={<MaskedEmail email={e.email} />} />
+              <CardField label="Email" value={<span className="flex items-center gap-1.5 flex-wrap"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span>} />
               <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
               <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
               <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
@@ -649,8 +730,13 @@ function BusTable({ employees }: { employees: any[] }) {
         <tbody>
           {employees.map((e: any) => (
             <tr key={e.id}>
-              <td className="font-medium">{e.name}</td>
-              <td><MaskedEmail email={e.email} /></td>
+              <td className="font-medium">
+                <span className="flex items-center gap-1.5">
+                  <TicketStatusDot employee={e} />
+                  {e.name}
+                </span>
+              </td>
+              <td><span className="flex items-center gap-1.5"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span></td>
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
               <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
               <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
@@ -705,7 +791,10 @@ function CarTable({ employees }: { employees: any[] }) {
           <div key={e.id} className={`p-4 space-y-3 ${e.switched_from_bus ? 'bg-warning/5' : ''}`}>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-semibold text-sm">{e.name}</p>
+                <p className="font-semibold text-sm flex items-center gap-1.5">
+                  <TicketStatusDot employee={e} />
+                  {e.name}
+                </p>
                 {e.switched_from_bus && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25 mt-1">
                     ⚠️ Pindahan Bus
@@ -716,7 +805,7 @@ function CarTable({ employees }: { employees: any[] }) {
             </div>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-              <CardField label="Email" value={<MaskedEmail email={e.email} />} />
+              <CardField label="Email" value={<span className="flex items-center gap-1.5 flex-wrap"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span>} />
               <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
               <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
               <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
@@ -748,14 +837,17 @@ function CarTable({ employees }: { employees: any[] }) {
           {employees.map((e: any) => (
             <tr key={e.id} className={e.switched_from_bus ? 'bg-warning/5' : ''}>
               <td>
-                <p className="font-medium">{e.name}</p>
+                <p className="font-medium flex items-center gap-1.5">
+                  <TicketStatusDot employee={e} />
+                  {e.name}
+                </p>
                 {e.switched_from_bus && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25 mt-0.5">
                     ⚠️ Pindahan Bus
                   </span>
                 )}
               </td>
-              <td><MaskedEmail email={e.email} /></td>
+              <td><span className="flex items-center gap-1.5"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span></td>
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
               <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
               <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
