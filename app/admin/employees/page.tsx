@@ -520,9 +520,21 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
   const [busy, setBusy] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [open, setOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLUListElement>(null);
+
+  // What's adjustable depends on the employee's own category, not the active tab —
+  // PIC bus adjusts the whole bus's passenger count, regular bus riders adjust
+  // nothing (they have no individual figures of their own).
+  const adjustCategory: 'bus' | 'private_car' | 'operational' | null = employee.is_pic_bus
+    ? 'bus'
+    : employee.transport_type === 'private_car'
+      ? 'private_car'
+      : employee.transport_type === 'operational'
+        ? 'operational'
+        : null;
 
   useEffect(() => {
     if (!feedback) return;
@@ -676,6 +688,17 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
           className="menu menu-sm z-[100] bg-base-100 rounded-box border border-base-300 shadow-lg w-48 p-1"
         >
+          {adjustCategory && (
+            <li>
+              <button onClick={() => { setOpen(false); setAdjustOpen(true); }}>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Sesuaikan Jumlah
+              </button>
+            </li>
+          )}
           {showTicketFiles && (
             <>
               <li>
@@ -741,7 +764,135 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
         </ul>,
         document.body
       )}
+
+      {adjustOpen && adjustCategory && (
+        <AdjustModal
+          employee={employee}
+          category={adjustCategory}
+          onClose={() => setAdjustOpen(false)}
+        />
+      )}
     </div>
+  );
+}
+
+function NumberField({ label, value, onChange, min = 0 }: {
+  label: string; value: number; onChange: (value: number) => void; min?: number;
+}) {
+  return (
+    <label className="form-control w-full">
+      <span className="label-text text-xs mb-1">{label}</span>
+      <input
+        type="number"
+        min={min}
+        className="input input-bordered input-sm w-full"
+        value={value}
+        onChange={(e) => onChange(Math.max(min, Number(e.target.value) || min))}
+      />
+    </label>
+  );
+}
+
+function AdjustModal({ employee, category, onClose }: {
+  employee: any;
+  category: 'bus' | 'private_car' | 'operational';
+  onClose: () => void;
+}) {
+  const [totalPassengers, setTotalPassengers]       = useState<number>(employee.total_passengers ?? 1);
+  const [totalBusPassengers, setTotalBusPassengers] = useState<number>(employee.total_bus_passengers ?? 0);
+  const [totalVehicles, setTotalVehicles]           = useState<number>(employee.total_vehicles ?? 0);
+  const [additionalMembers, setAdditionalMembers]   = useState<number>(employee.additional_members ?? 0);
+  const [additionalVehicles, setAdditionalVehicles] = useState<number>(employee.additional_vehicles ?? 0);
+  const [belowTwo, setBelowTwo]                     = useState<boolean>(!!employee.has_below_two_children);
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
+
+  const title = category === 'bus'
+    ? 'Sesuaikan Jumlah Penumpang Bus'
+    : category === 'operational'
+      ? 'Sesuaikan Jumlah Penumpang'
+      : 'Sesuaikan Jumlah Peserta & Kendaraan';
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const payload: Record<string, unknown> =
+        category === 'bus'
+          ? { total_bus_passengers: totalBusPassengers }
+          : category === 'operational'
+            ? { total_passengers: totalPassengers }
+            : {
+                // Explicit so the backend's total_vehicles-derives-transport_type
+                // fallback never accidentally flips this employee to 'bus'.
+                transport_type: 'private_car',
+                total_passengers: totalPassengers,
+                total_vehicles: totalVehicles,
+                additional_members: additionalMembers,
+                additional_vehicles: additionalVehicles,
+                has_below_two_children: belowTwo,
+              };
+
+      await updateEmployee(employee.id, payload);
+      await mutate('employees');
+      onClose();
+    } catch {
+      setError('Gagal menyimpan perubahan.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return createPortal(
+    <div className="modal modal-open">
+      <div className="modal-box max-w-sm">
+        <h3 className="font-bold text-lg mb-1">{title}</h3>
+        <p className="text-sm text-base-content/60 mb-4">{employee.name}</p>
+
+        <div className="flex flex-col gap-3">
+          {category === 'bus' && (
+            <NumberField label="Jumlah Penumpang Bus" value={totalBusPassengers} onChange={setTotalBusPassengers} />
+          )}
+
+          {(category === 'private_car' || category === 'operational') && (
+            <NumberField
+              label={category === 'operational' ? 'Jumlah Penumpang' : 'Jumlah Peserta'}
+              value={totalPassengers}
+              onChange={setTotalPassengers}
+              min={1}
+            />
+          )}
+
+          {category === 'private_car' && (
+            <>
+              <NumberField label="Jumlah Kendaraan" value={totalVehicles} onChange={setTotalVehicles} />
+              <NumberField label="Tambahan Peserta" value={additionalMembers} onChange={setAdditionalMembers} />
+              <NumberField label="Tambahan Kendaraan" value={additionalVehicles} onChange={setAdditionalVehicles} />
+              <label className="label cursor-pointer justify-start gap-2 px-0">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm"
+                  checked={belowTwo}
+                  onChange={(e) => setBelowTwo(e.target.checked)}
+                />
+                <span className="label-text">Punya anak di bawah 2 tahun</span>
+              </label>
+            </>
+          )}
+        </div>
+
+        {error && <p className="text-error text-xs mt-3">{error}</p>}
+
+        <div className="modal-action">
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={saving}>Batal</button>
+          <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving}>
+            {saving ? <span className="loading loading-spinner loading-xs" /> : 'Simpan'}
+          </button>
+        </div>
+      </div>
+      <button className="modal-backdrop" aria-label="Tutup" onClick={saving ? undefined : onClose} />
+    </div>,
+    document.body
   );
 }
 
