@@ -144,6 +144,14 @@ export async function sendEmployeeEmail(id: number) {
   return response.json();
 }
 
+export async function downloadBlankTicketForm() {
+  const response = await fetch(`${API_BASE}/tickets/blank`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to download blank ticket form');
+  return response.blob();
+}
+
 export async function downloadEmployeeQr(id: number) {
   const response = await fetch(`${API_BASE}/employees/${id}/qr`, {
     headers: authHeaders(),

@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
-import { fetchEmployees, blastTicketEmail, sendEmployeeEmail, updateEmployee, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, logoutApi } from '../../../lib/api';
+import { fetchEmployees, blastTicketEmail, sendEmployeeEmail, updateEmployee, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, downloadBlankTicketForm, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
 import { BASE_PATH } from '../../../lib/basePath';
 
@@ -22,6 +22,8 @@ export default function EmployeesPage() {
   const [blastLoading, setBlastLoading] = useState(false);
   const [blastMessage, setBlastMessage] = useState('');
   const [blastIsError, setBlastIsError] = useState(false);
+  const [blankLoading, setBlankLoading] = useState(false);
+  const [blankError, setBlankError] = useState(false);
   const [displayName, setDisplayName] = useState('');
 
   useEffect(() => { setDisplayName(getDisplayName() ?? ''); }, []);
@@ -51,6 +53,24 @@ export default function EmployeesPage() {
       setBlastMessage('Gagal memulai blast email. Pastikan PDF sudah selesai di-generate.');
     } finally {
       setBlastLoading(false);
+    }
+  };
+
+  const handleDownloadBlankTicket = async () => {
+    setBlankLoading(true);
+    setBlankError(false);
+    try {
+      const blob = await downloadBlankTicketForm();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'tiket_kosong.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setBlankError(true);
+    } finally {
+      setBlankLoading(false);
     }
   };
 
@@ -140,6 +160,24 @@ export default function EmployeesPage() {
               </svg>
               <span className="hidden sm:inline">QR Ancol</span>
             </Link>
+            <button
+              className="btn btn-secondary btn-sm sm:gap-2 px-2 sm:px-3"
+              onClick={handleDownloadBlankTicket}
+              disabled={blankLoading}
+              title="Cetak Tiket Kosong"
+            >
+              {blankLoading ? (
+                <><span className="loading loading-spinner loading-xs" /> <span className="hidden sm:inline">Mencetak...</span></>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" />
+                  </svg>
+                  <span className="hidden sm:inline">Tiket Kosong</span>
+                </>
+              )}
+            </button>
             <Link href="/admin/upload" className="btn btn-primary btn-sm sm:gap-2 px-2 sm:px-3" title="Upload Excel">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -158,6 +196,17 @@ export default function EmployeesPage() {
             </svg>
             <span>{blastMessage}</span>
             <button onClick={() => setBlastMessage('')} className="ml-auto text-base-content/50 hover:text-base-content">✕</button>
+          </div>
+        )}
+
+        {/* Blank ticket error */}
+        {blankError && (
+          <div className="alert alert-error text-sm py-2">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <span>Gagal mencetak tiket kosong.</span>
+            <button onClick={() => setBlankError(false)} className="ml-auto text-base-content/50 hover:text-base-content">✕</button>
           </div>
         )}
 
