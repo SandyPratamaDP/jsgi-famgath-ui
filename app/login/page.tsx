@@ -1,19 +1,35 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { loginApi } from '../../lib/api';
 import { saveAuth } from '../../lib/auth';
 import { BASE_PATH } from '../../lib/basePath';
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+  const [expiredNotice, setExpiredNotice] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('expired') === '1') {
+      setExpiredNotice(true);
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -55,9 +71,13 @@ export default function LoginPage() {
 
           <h2 className="text-xl font-bold text-center">Masuk</h2>
 
-          {error && (
+          {error ? (
             <div className="alert alert-error py-2 text-sm">
               <span>{error}</span>
+            </div>
+          ) : expiredNotice && (
+            <div className="alert alert-warning py-2 text-sm">
+              <span>Sesi login sudah berakhir. Silakan masuk kembali.</span>
             </div>
           )}
 
