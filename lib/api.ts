@@ -159,6 +159,30 @@ export async function sendEmployeeEmail(id: number) {
   return response.json();
 }
 
+export async function regenerateEmployeeTicket(id: number) {
+  const response = await authFetch(`/employees/${id}/regenerate-ticket`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to regenerate employee ticket');
+  }
+
+  return response.json();
+}
+
+export async function regenerateAllTickets() {
+  const response = await authFetch('/employees/regenerate-tickets', {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to regenerate tickets');
+  }
+
+  return response.json() as Promise<{ message: string; count: number }>;
+}
+
 export async function downloadBlankTicketForm() {
   const response = await authFetch('/tickets/blank');
   if (!response.ok) throw new Error('Failed to download blank ticket form');

@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
-import { fetchEmployees, blastTicketEmail, sendEmployeeEmail, updateEmployee, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, downloadBlankTicketForm, logoutApi } from '../../../lib/api';
+import { fetchEmployees, blastTicketEmail, sendEmployeeEmail, updateEmployee, downloadEmployeePdf, downloadEmployeeImage, downloadEmployeeQr, downloadBlankTicketForm, regenerateEmployeeTicket, regenerateAllTickets, logoutApi } from '../../../lib/api';
 import { clearAuth, getDisplayName } from '../../../lib/auth';
 import { BASE_PATH } from '../../../lib/basePath';
 
@@ -24,6 +24,9 @@ export default function EmployeesPage() {
   const [blastIsError, setBlastIsError] = useState(false);
   const [blankLoading, setBlankLoading] = useState(false);
   const [blankError, setBlankError] = useState(false);
+  const [regenerateLoading, setRegenerateLoading] = useState(false);
+  const [regenerateMessage, setRegenerateMessage] = useState('');
+  const [regenerateIsError, setRegenerateIsError] = useState(false);
   const [displayName, setDisplayName] = useState('');
 
   useEffect(() => { setDisplayName(getDisplayName() ?? ''); }, []);
@@ -53,6 +56,25 @@ export default function EmployeesPage() {
       setBlastMessage('Gagal memulai blast email. Pastikan PDF sudah selesai di-generate.');
     } finally {
       setBlastLoading(false);
+    }
+  };
+
+  const handleRegenerateAll = async () => {
+    if (!window.confirm('Generate ulang semua tiket karyawan? Berguna kalau ada perubahan data (mis. jumlah peserta) tanpa upload ulang Excel.')) {
+      return;
+    }
+    setRegenerateLoading(true);
+    setRegenerateMessage('');
+    setRegenerateIsError(false);
+    try {
+      const result = await regenerateAllTickets();
+      setRegenerateMessage(`Regenerasi tiket dimulai untuk ${result.count ?? 0} karyawan.`);
+      await mutate('employees');
+    } catch {
+      setRegenerateIsError(true);
+      setRegenerateMessage('Gagal memulai regenerasi tiket.');
+    } finally {
+      setRegenerateLoading(false);
     }
   };
 
@@ -153,6 +175,24 @@ export default function EmployeesPage() {
             </button>
             <button
               className="btn btn-secondary btn-sm sm:gap-2 px-2 sm:px-3"
+              onClick={handleRegenerateAll}
+              disabled={regenerateLoading || ticketStats.eligible === 0}
+              title="Generate Ulang Semua Tiket"
+            >
+              {regenerateLoading ? (
+                <><span className="loading loading-spinner loading-xs" /> <span className="hidden sm:inline">Memproses...</span></>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="hidden sm:inline">Generate Ulang</span>
+                </>
+              )}
+            </button>
+            <button
+              className="btn btn-secondary btn-sm sm:gap-2 px-2 sm:px-3"
               onClick={handleBlastEmail}
               disabled={blastLoading || !ticketsReady}
               title={
@@ -209,6 +249,17 @@ export default function EmployeesPage() {
             </Link>
           </div>
         </div>
+
+        {/* Regenerate tickets result */}
+        {regenerateMessage && (
+          <div className={`alert text-sm py-2 ${regenerateIsError ? 'alert-error' : 'alert-success'}`}>
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <span>{regenerateMessage}</span>
+            <button onClick={() => setRegenerateMessage('')} className="ml-auto text-base-content/50 hover:text-base-content">✕</button>
+          </div>
+        )}
 
         {/* Blast email result */}
         {blastMessage && (
@@ -539,6 +590,22 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
     }
   };
 
+  const handleRegenerate = async () => {
+    setOpen(false);
+    if (!window.confirm(`Generate ulang tiket ${employee.name}? Berguna kalau data (mis. jumlah peserta) berubah setelah tiket lama dibuat.`)) return;
+    setBusy('regenerate');
+    setFeedback(null);
+    try {
+      await regenerateEmployeeTicket(employee.id);
+      await mutate('employees');
+      setFeedback({ ok: true, text: 'Diproses' });
+    } catch {
+      setFeedback({ ok: false, text: 'Gagal generate' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const handleSendEmail = async () => {
     setOpen(false);
     if (!window.confirm(`Kirim/kirim ulang email tiket ke ${employee.name}?`)) return;
@@ -627,6 +694,15 @@ function EmployeeActionsMenu({ employee, showTicketFiles, showSendEmail }: {
                       d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   Download Image
+                </button>
+              </li>
+              <li>
+                <button onClick={handleRegenerate} disabled={busy === 'regenerate'}>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Generate Ulang Tiket
                 </button>
               </li>
             </>
