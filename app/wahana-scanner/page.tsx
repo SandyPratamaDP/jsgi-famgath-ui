@@ -11,10 +11,10 @@ import { BASE_PATH } from '../../lib/basePath';
 
 type WahanaKey = 'sea_world' | 'samudera';
 
-type CheckinState = {
-  used: boolean;
-  checked_in_at: string | null;
-  checked_in_by: string | null;
+type WahanaState = {
+  total: number;
+  checked_in: number;
+  remaining: number;
 };
 
 type ScanResult = {
@@ -22,7 +22,7 @@ type ScanResult = {
   name: string;
   total_passengers: number;
   additional_members: number;
-  checkins: Record<WahanaKey, CheckinState>;
+  checkins: Record<WahanaKey, WahanaState>;
 };
 
 const WAHANA_LABELS: Record<WahanaKey, string> = {
@@ -260,27 +260,20 @@ export default function WahanaScannerPage() {
 function WahanaButton({
   label, colorClass, state, loading, onClick,
 }: {
-  label: string; colorClass: string; state: CheckinState; loading: boolean; onClick: () => void;
+  label: string; colorClass: string; state: WahanaState; loading: boolean; onClick: () => void;
 }) {
-  if (state.used) {
-    const time = state.checked_in_at
-      ? new Date(state.checked_in_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-      : '';
-    return (
-      <button disabled className="btn w-full rounded-2xl btn-disabled justify-start gap-2 opacity-70">
-        <span>✅</span>
-        <span className="flex-1 text-left">{label} — Sudah digunakan{time && ` · ${time}`}</span>
-      </button>
-    );
-  }
+  const isFull = state.remaining <= 0;
 
   return (
     <button
       onClick={onClick}
-      disabled={loading}
-      className={`btn w-full rounded-2xl ${colorClass}`}
+      disabled={isFull || loading}
+      className={`btn w-full rounded-2xl justify-between ${isFull ? 'btn-disabled opacity-70' : colorClass}`}
     >
-      {loading ? <span className="loading loading-spinner loading-xs" /> : label}
+      <span>{label}</span>
+      {loading
+        ? <span className="loading loading-spinner loading-xs" />
+        : <span className="badge badge-neutral">{state.remaining}</span>}
     </button>
   );
 }
