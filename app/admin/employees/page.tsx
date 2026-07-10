@@ -466,6 +466,20 @@ function BelowTwoBadge({ has }: { has: boolean }) {
   );
 }
 
+// Anak 1-2 tahun sudah tidak dihitung di Jml. Keluarga (bebas tiket gerbang), tapi
+// tetap butuh tiket wahana — badge ini menandai siapa yang dapat +1 otomatis di wahana scanner.
+function WahanaBonusBadge({ belowTwo, belowOne }: { belowTwo: boolean; belowOne: boolean }) {
+  if (!belowTwo || belowOne) return null;
+  return (
+    <span
+      title="Anak usia 1-2 tahun: bebas tiket gerbang, tetap kena tiket wahana"
+      className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-info/10 text-info border border-info/20"
+    >
+      +1 Wahana
+    </span>
+  );
+}
+
 function maskEmail(email?: string | null): string | null {
   if (!email) return null;
   const [local, domain] = email.split('@');
@@ -804,6 +818,7 @@ function AdjustModal({ employee, category, onClose }: {
   const [additionalMembers, setAdditionalMembers]   = useState<number>(employee.additional_members ?? 0);
   const [additionalVehicles, setAdditionalVehicles] = useState<number>(employee.additional_vehicles ?? 0);
   const [belowTwo, setBelowTwo]                     = useState<boolean>(!!employee.has_below_two_children);
+  const [belowOne, setBelowOne]                     = useState<boolean>(!!employee.has_below_one_year_child);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
@@ -831,6 +846,8 @@ function AdjustModal({ employee, category, onClose }: {
                 additional_members: additionalMembers,
                 additional_vehicles: additionalVehicles,
                 has_below_two_children: belowTwo,
+                // Meaningless without a below-2 child — force it off if that got unchecked.
+                has_below_one_year_child: belowTwo && belowOne,
               };
 
       await updateEmployee(employee.id, payload);
@@ -877,6 +894,18 @@ function AdjustModal({ employee, category, onClose }: {
                 />
                 <span className="label-text">Punya anak di bawah 2 tahun</span>
               </label>
+
+              {belowTwo && (
+                <label className="label cursor-pointer justify-start gap-2 px-0 pl-6">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={belowOne}
+                    onChange={(e) => setBelowOne(e.target.checked)}
+                  />
+                  <span className="label-text">Anak tersebut di bawah 1 tahun</span>
+                </label>
+              )}
             </>
           )}
         </div>
@@ -915,7 +944,12 @@ function BusTable({ employees }: { employees: any[] }) {
               <CardField label="Email" value={<span className="flex items-center gap-1.5 flex-wrap"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span>} />
               <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
               <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
-              <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
+              <CardField label="Anak <2 Thn" value={
+                <span className="flex items-center gap-1 flex-wrap">
+                  <BelowTwoBadge has={!!e.has_below_two_children} />
+                  <WahanaBonusBadge belowTwo={!!e.has_below_two_children} belowOne={!!e.has_below_one_year_child} />
+                </span>
+              } />
               <CardField
                 label="No. Bus"
                 value={e.bus_number != null
@@ -966,7 +1000,12 @@ function BusTable({ employees }: { employees: any[] }) {
               <td><span className="flex items-center gap-1.5"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span></td>
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
               <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
-              <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
+              <td className="text-center">
+                <span className="flex items-center justify-center gap-1 flex-wrap">
+                  <BelowTwoBadge has={!!e.has_below_two_children} />
+                  <WahanaBonusBadge belowTwo={!!e.has_below_two_children} belowOne={!!e.has_below_one_year_child} />
+                </span>
+              </td>
               <td><TransportBadge type={e.transport_type} /></td>
               <td>
                 {e.bus_number != null
@@ -1035,7 +1074,12 @@ function CarTable({ employees }: { employees: any[] }) {
               <CardField label="Email" value={<span className="flex items-center gap-1.5 flex-wrap"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span>} />
               <CardField label="Jml. Keluarga" value={<span className="font-semibold">{e.total_passengers ?? 1}</span>} />
               <CardField label="Tambahan Peserta" value={<AdditionalMembersBadge count={e.additional_members ?? 0} />} />
-              <CardField label="Anak <2 Thn" value={<BelowTwoBadge has={!!e.has_below_two_children} />} />
+              <CardField label="Anak <2 Thn" value={
+                <span className="flex items-center gap-1 flex-wrap">
+                  <BelowTwoBadge has={!!e.has_below_two_children} />
+                  <WahanaBonusBadge belowTwo={!!e.has_below_two_children} belowOne={!!e.has_below_one_year_child} />
+                </span>
+              } />
               <CardField label="Jml. Kendaraan" value={<span className="font-semibold">{e.total_vehicles ?? 0}</span>} />
             </div>
 
@@ -1077,7 +1121,12 @@ function CarTable({ employees }: { employees: any[] }) {
               <td><span className="flex items-center gap-1.5"><MaskedEmail email={e.email} /><EmailSentBadge sentAt={e.ticket_email_sent_at} /></span></td>
               <td className="text-center font-semibold">{e.total_passengers ?? 1}</td>
               <td className="text-center"><AdditionalMembersBadge count={e.additional_members ?? 0} /></td>
-              <td className="text-center"><BelowTwoBadge has={!!e.has_below_two_children} /></td>
+              <td className="text-center">
+                <span className="flex items-center justify-center gap-1 flex-wrap">
+                  <BelowTwoBadge has={!!e.has_below_two_children} />
+                  <WahanaBonusBadge belowTwo={!!e.has_below_two_children} belowOne={!!e.has_below_one_year_child} />
+                </span>
+              </td>
               <td><TransportBadge type={e.transport_type} /></td>
               <td className="text-center font-semibold">{e.total_vehicles ?? 0}</td>
               <td>
