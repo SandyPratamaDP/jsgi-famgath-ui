@@ -45,6 +45,8 @@ The app is served under the `/famgath` base path (see `lib/basePath.ts`), so onc
 
 The browser only ever talks to this Next.js app's own origin. `next.config.ts` rewrites `/api/*` to `LARAVEL_INTERNAL_URL`, so the Laravel backend is never exposed directly to the client — all `fetch()` calls in `lib/api.ts` hit `${BASE_PATH}/api/...` and Next.js proxies them server-side.
 
+🌐 The rewrite forwards the incoming request's headers as-is, including `X-Forwarded-For` set by the production nginx in front of this app — so the backend's login audit log (`login_logs`) can still resolve the real client IP through this internal hop instead of logging Next.js's own loopback address (see the backend README's Auth & Roles section).
+
 🔑 Auth: `loginApi()` stores the returned Sanctum bearer token, role, and display name in cookies (`lib/auth.ts`); every subsequent request attaches `Authorization: Bearer <token>`. All authenticated calls go through a shared `authFetch()` helper that detects a `401` response, clears local auth, and redirects to `/login?expired=1` — so an expired or revoked session bounces the user back to login instead of leaving the page stuck on a silent error.
 
 ## 🗺️ Pages
@@ -54,7 +56,7 @@ The browser only ever talks to this Next.js app's own origin. `next.config.ts` r
 | 🔓 `/login` | Public | Username/password login |
 | 🏠 `/` | Any role | Menu hub — links to the pages below (Employee List hidden for `eo` role) |
 | 🎟️ `/gate-scanner` | Any role | Search an employee, view transport info, display QR, emergency bus→car switch |
-| 🎢 `/wahana-scanner` | Any role | Scan/search an employee and check them in to Sea World or Samudera Ancol (one-time use each) |
+| 🎢 `/wahana-scanner` | Any role | Scan/search an employee, see remaining quota per venue, and check in up to that many people to Sea World Ancol or Ocean Dream Samudra (per-person quota, repeatable — not one-time) |
 | 📋 `/admin/employees` | 🛡️ `panitia` | Employee list, Excel upload, ticket generation status, blast email, per-employee ticket actions |
 | 📊 `/admin/upload` | 🛡️ `panitia` | Excel import |
 | 🔳 `/admin/ancol-qr` | 🛡️ `panitia` | Upload/replace the Ancol gate-entry QR per employee category (local/expat/operational) |
@@ -68,14 +70,15 @@ The browser only ever talks to this Next.js app's own origin. `next.config.ts` r
 - ✉️ **Blast Email** — disabled until ticket generation is complete (or if there's nothing eligible yet), preventing a blast from going out with attachments not fully generated
 - ✅ **Terkirim badge** — shows next to an employee's email once their ticket email has actually been sent
 - 🚌 **Pindahkan ke Bus/Kendaraan Pribadi** — reassign an employee's transport category
+- 👶 **Anak <2 / <1 Tahun** (private car only) — flags a below-2yo child (gate-free at Ancol) and whether they're also below 1yo (rides-free too); below-2-but-not-below-1 automatically shows a **+1 Wahana** badge, matching the extra seat the wahana scanner adds to that family's ride quota without touching their stored passenger count
 - ⚡ Per-employee actions: download PDF/image/QR, send/resend ticket email, regenerate ticket, adjust counts
 
 ## 🖼️ Assets
 
-Place the Ancol entry QR fallback image (if used) and logo at:
-
 ```text
-public/images/logo.webp
+public/images/logo.webp            # app header logo
+public/images/sea-world-logo.png   # Sea World Ancol button logo (wahana-scanner)
+public/images/samudera-logo.png    # Ocean Dream Samudra button logo (wahana-scanner)
 ```
 
 Per-category Ancol gate-entry QR images are managed at runtime through `/admin/ancol-qr` and stored on the backend, not bundled as static assets here.
