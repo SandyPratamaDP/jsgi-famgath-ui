@@ -26,8 +26,13 @@ type ScanResult = {
 };
 
 const WAHANA_LABELS: Record<WahanaKey, string> = {
-  sea_world: 'Sea World',
-  samudera: 'Samudera Ancol',
+  sea_world: 'Sea World Ancol',
+  samudera: 'Ocean Dream Samudra',
+};
+
+const WAHANA_LOGOS: Record<WahanaKey, { src: string; width: number; height: number }> = {
+  sea_world: { src: `${BASE_PATH}/images/sea-world-logo.png`, width: 219, height: 96 },
+  samudera:  { src: `${BASE_PATH}/images/samudera-logo.png`,  width: 213, height: 96 },
 };
 
 export default function WahanaScannerPage() {
@@ -106,7 +111,7 @@ export default function WahanaScannerPage() {
           />
           <div className="flex-1">
             <h1 className="text-xl font-bold tracking-tight">Wahana Scanner</h1>
-            <p className="text-xs text-base-content/55 mt-0.5">Sea World & Samudera Ancol</p>
+            <p className="text-xs text-base-content/55 mt-0.5">Sea World Ancol & Ocean Dream Samudra</p>
           </div>
           <Link
             href="/gate-scanner"
@@ -229,6 +234,7 @@ export default function WahanaScannerPage() {
 
             <div className="space-y-2">
               <WahanaButton
+                wahana="sea_world"
                 label={WAHANA_LABELS.sea_world}
                 colorClass="btn-primary"
                 state={result.checkins.sea_world}
@@ -236,6 +242,7 @@ export default function WahanaScannerPage() {
                 onClick={() => handleCheckin('sea_world')}
               />
               <WahanaButton
+                wahana="samudera"
                 label={WAHANA_LABELS.samudera}
                 colorClass="btn-secondary"
                 state={result.checkins.samudera}
@@ -258,11 +265,12 @@ export default function WahanaScannerPage() {
 // ── Result sub-components ───────────────────────────────────────────────────
 
 function WahanaButton({
-  label, colorClass, state, loading, onClick,
+  wahana, label, colorClass, state, loading, onClick,
 }: {
-  label: string; colorClass: string; state: WahanaState; loading: boolean; onClick: () => void;
+  wahana: WahanaKey; label: string; colorClass: string; state: WahanaState; loading: boolean; onClick: () => void;
 }) {
   const isFull = state.remaining <= 0;
+  const logo   = WAHANA_LOGOS[wahana];
 
   return (
     <button
@@ -270,7 +278,17 @@ function WahanaButton({
       disabled={isFull || loading}
       className={`btn w-full rounded-2xl justify-between ${isFull ? 'btn-disabled opacity-70' : colorClass}`}
     >
-      <span>{label}</span>
+      <span className="flex items-center gap-2">
+        <Image
+          src={logo.src}
+          alt=""
+          width={logo.width}
+          height={logo.height}
+          className="h-7 w-auto shrink-0 drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]"
+          unoptimized
+        />
+        <span>{label}</span>
+      </span>
       {loading
         ? <span className="loading loading-spinner loading-xs" />
         : <span className="badge badge-neutral">{state.remaining}</span>}
